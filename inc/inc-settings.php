@@ -20,6 +20,7 @@ function feng_settings_schema() {
    'disable_revisions'=>array('停止保存文章修订版本','checkbox',false),
    'jieqi_enabled'=>array('节气与节假日弹窗','checkbox',true),
    'default_scheme' => array('默认配色','select','system',array('system'=>'跟随系统','light'=>'浅色','dark'=>'深色')),
+   'header_logo'=>array('菜单栏 LOGO','image',''),
   )),
   'home' => array('title'=>'首页与内容','fields'=>array(
    'xf_eyebrow'=>array('首页欢迎语','text','你好，欢迎来到我的生活切片'),
@@ -40,7 +41,7 @@ function feng_settings_schema() {
    'home_category_4'=>array('首页第 4 个分类','select','0',$category_options),
    'home_category_5'=>array('首页第 5 个分类','select','0',$category_options),
    'xf_hero_intro'=>array('首页简介','textarea','一些日常，一些远方，一些想要留下的瞬间。'),
-   'hero_portrait'=>array('Hero 主图（留空使用管理员头像）','image',''),
+   'hero_portrait'=>array('备用 Hero 主图（未设置个人头像时使用）','image',''),
    'hero_photo_1'=>array('生活照片 1','image',''),
    'hero_photo_2'=>array('生活照片 2','image',''),
    'hero_photo_3'=>array('生活照片 3','image',''),
@@ -75,7 +76,7 @@ function feng_settings_schema() {
    'decade_enabled'=>array('关于页显示博客十年','checkbox',true),
    'decade_start'=>array('博客十年起始日期（留空使用最早公开文章日期）','date',''),
    'profile_name'=>array('展示名称','text',''),
-   'profile_avatar'=>array('个人头像','image',''),
+   'profile_avatar'=>array('个人头像（首页 Hero）','image',''),
    'profile_tagline'=>array('个人介绍','textarea','保持好奇，记录生活。'),
    'profile_location'=>array('所在地（可留空）','text',''),
    'social_github'=>array('GitHub','url',''),
@@ -180,7 +181,7 @@ function feng_settings_screen() {
  elseif($field[1]==='select') { ?><select id="<?php echo esc_attr($input_id); ?>" name="<?php echo esc_attr($name); ?>"><?php foreach($field[3] as $option=>$label) { ?><option value="<?php echo esc_attr($option); ?>" <?php selected($value,$option); ?>><?php echo esc_html($label); ?></option><?php } ?></select><?php }
  elseif(in_array($field[1],array('textarea','code'),true)) { ?><textarea class="large-text" rows="3" id="<?php echo esc_attr($input_id); ?>" name="<?php echo esc_attr($name); ?>"><?php echo esc_textarea($value); ?></textarea><?php }
  else { $media=in_array($field[1],array('image','video'),true); $type=$media?($field[1]==='video'?'number':'url'):$field[1]; ?><input class="regular-text" type="<?php echo esc_attr($type); ?>" id="<?php echo esc_attr($input_id); ?>" name="<?php echo esc_attr($name); ?>" value="<?php echo esc_attr($value); ?>" <?php if($field[1]==='number') echo 'min="1" max="60"'; ?>><?php if($media) { ?> <button type="button" class="button feng-media-icon" data-feng-media="<?php echo esc_attr($field[1]); ?>" data-feng-target="<?php echo esc_attr($input_id); ?>" aria-label="选择媒体" title="选择媒体"><span class="dashicons dashicons-format-image" aria-hidden="true"></span></button> <button type="button" class="button feng-media-icon feng-media-icon--clear" data-feng-clear="<?php echo esc_attr($input_id); ?>" aria-label="清除已选媒体" title="清除已选媒体（不删除媒体库文件）"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button><?php } } ?>
- </div><?php if($key==='analytics_code'): ?><p class="description">粘贴统计平台提供的完整代码，仅具有 unfiltered_html 权限的管理员可修改。启用后输出到页脚，支持带 defer 的脚本。</p><?php elseif($key==='images_webp'): ?><p class="description">新上传的 JPEG 和静态 PNG 转为 WebP（质量 82）；保留透明度，GIF、动画 PNG、SVG 和已有 WebP 保持原格式。失败时保留原图。</p><?php elseif($key==='disable_revisions'): ?><p class="description">只影响后续保存，不删除已有修订。自动保存保留。</p><?php elseif($key==='remove_category_base'): ?><p class="description">保存后自动更新分类路由。与已有页面地址冲突的分类保留原链接。</p><?php elseif($key==='jieqi_enabled'): ?><p class="description">使用节期的邮票风格卡片，按北京时间判断显示时机。访客可以关闭弹出的卡片，站点总开关在此设置。</p><?php elseif($key==='xf_eyebrow'): ?><p class="description">Hero 标题使用<a href="<?php echo esc_url(admin_url('options-general.php')); ?>">站点副标题</a>，这里设置标题上方的欢迎语。</p><?php elseif($key==='pet_side'): ?><p class="description">首页显示在最新说说右侧，其余页面使用此位置。</p><?php elseif($key==='profile_avatar'): ?><p class="description">用于关于页面；页头头像读取站点管理邮箱对应的 Gravatar。</p><?php endif; ?></td></tr><?php endforeach; ?></table>
+ </div><?php if($key==='analytics_code'): ?><p class="description">粘贴统计平台提供的完整代码，仅具有 unfiltered_html 权限的管理员可修改。启用后输出到页脚，支持带 defer 的脚本。</p><?php elseif($key==='images_webp'): ?><p class="description">新上传的 JPEG 和静态 PNG 转为 WebP（质量 82）；保留透明度，GIF、动画 PNG、SVG 和已有 WebP 保持原格式。失败时保留原图。</p><?php elseif($key==='disable_revisions'): ?><p class="description">只影响后续保存，不删除已有修订。自动保存保留。</p><?php elseif($key==='remove_category_base'): ?><p class="description">保存后自动更新分类路由。与已有页面地址冲突的分类保留原链接。</p><?php elseif($key==='jieqi_enabled'): ?><p class="description">使用节期的邮票风格卡片，按北京时间判断显示时机。访客可以关闭弹出的卡片，站点总开关在此设置。</p><?php elseif($key==='xf_eyebrow'): ?><p class="description">Hero 标题使用<a href="<?php echo esc_url(admin_url('options-general.php')); ?>">站点副标题</a>，这里设置标题上方的欢迎语。</p><?php elseif($key==='header_logo'): ?><p class="description">菜单栏使用此 LOGO；留空时使用 WordPress 站点图标。与首页 Hero 的个人头像分别设置。</p><?php elseif($key==='pet_side'): ?><p class="description">首页显示在最新说说右侧，其余页面使用此位置。</p><?php elseif($key==='profile_avatar'): ?><p class="description">首页 Hero 正面的第一张照片使用这张头像；留空时使用备用 Hero 主图或管理员邮箱头像。关于页仍使用管理员邮箱对应的 Gravatar。</p><?php endif; ?></td></tr><?php endforeach; ?></table>
  <?php if($id==='appearance'): ?><div class="feng-native-links"><h3>站点基础设置</h3><p>直接使用 WordPress 管理站点名称、副标题和导航。</p></div><?php endif; ?>
  </section><?php endforeach; feng_settings_save_bar(); ?></form>
  <?php feng_database_cleanup_form(); ?></div></div></div>

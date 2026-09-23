@@ -5,6 +5,9 @@
 <meta charset="<?php bloginfo( 'charset' ); ?>">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="xf-theme" content="0.5.2">
+<?php if ( is_file( ABSPATH . 'site.webmanifest' ) ) : ?>
+<link rel="manifest" href="<?php echo esc_url( home_url( '/site.webmanifest' ) ); ?>">
+<?php endif; ?>
 <script>
 /* Resolve the visitor's theme before styles and body can paint. */
 (function(){var root=document.documentElement,saved,manual=false;try{saved=localStorage.getItem('xf-theme');manual=localStorage.getItem('xf-theme-manual')==='1'&&(saved==='light'||saved==='dark');}catch(e){}var configured=<?php echo wp_json_encode($feng_scheme); ?>;var setting=configured!=='system'?configured:(saved==='light'||saved==='dark'||saved==='system'?saved:'system');var dark=setting==='dark'||(setting!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var hour=new Date().getHours(),night=hour<6||hour>=18;root.setAttribute('data-xf-theme',(night&&!manual)||dark?'dark':'light');})();
@@ -22,9 +25,18 @@ html[data-xf-theme="dark"] body{background:#0a0a0a}
 <div class="xf-global-loading" data-xf-progress aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor" focusable="false"><rect x="1.5" y="1.5" rx="1" width="9" height="9"><animate id="polar_loading_first" begin="0;polar_loading_last.end+0.15s" attributeName="x" dur="0.6s" values="1.5;0.5;1.5" keyTimes="0;.2;1"/><animate begin="0;polar_loading_last.end+0.15s" attributeName="y" dur="0.6s" values="1.5;0.5;1.5" keyTimes="0;.2;1"/><animate begin="0;polar_loading_last.end+0.15s" attributeName="width" dur="0.6s" values="9;11;9" keyTimes="0;.2;1"/><animate begin="0;polar_loading_last.end+0.15s" attributeName="height" dur="0.6s" values="9;11;9" keyTimes="0;.2;1"/></rect><rect x="13.5" y="1.5" rx="1" width="9" height="9"><animate begin="polar_loading_first.begin+0.15s" attributeName="x" dur="0.6s" values="13.5;12.5;13.5" keyTimes="0;.2;1"/><animate begin="polar_loading_first.begin+0.15s" attributeName="y" dur="0.6s" values="1.5;0.5;1.5" keyTimes="0;.2;1"/><animate begin="polar_loading_first.begin+0.15s" attributeName="width" dur="0.6s" values="9;11;9" keyTimes="0;.2;1"/><animate begin="polar_loading_first.begin+0.15s" attributeName="height" dur="0.6s" values="9;11;9" keyTimes="0;.2;1"/></rect><rect x="13.5" y="13.5" rx="1" width="9" height="9"><animate begin="polar_loading_first.begin+0.3s" attributeName="x" dur="0.6s" values="13.5;12.5;13.5" keyTimes="0;.2;1"/><animate begin="polar_loading_first.begin+0.3s" attributeName="y" dur="0.6s" values="13.5;12.5;13.5" keyTimes="0;.2;1"/><animate begin="polar_loading_first.begin+0.3s" attributeName="width" dur="0.6s" values="9;11;9" keyTimes="0;.2;1"/><animate begin="polar_loading_first.begin+0.3s" attributeName="height" dur="0.6s" values="9;11;9" keyTimes="0;.2;1"/></rect><rect x="1.5" y="13.5" rx="1" width="9" height="9"><animate id="polar_loading_last" begin="polar_loading_first.begin+0.44999999999999996s" attributeName="x" dur="0.6s" values="1.5;0.5;1.5" keyTimes="0;.2;1"/><animate begin="polar_loading_first.begin+0.44999999999999996s" attributeName="y" dur="0.6s" values="13.5;12.5;13.5" keyTimes="0;.2;1"/><animate begin="polar_loading_first.begin+0.44999999999999996s" attributeName="width" dur="0.6s" values="9;11;9" keyTimes="0;.2;1"/><animate begin="polar_loading_first.begin+0.44999999999999996s" attributeName="height" dur="0.6s" values="9;11;9" keyTimes="0;.2;1"/></rect></svg></div>
 <p class="screen-reader-text" data-xf-status role="status" aria-live="polite"></p>
 <div id="xf-view" class="xf-site<?php echo is_page()?' feng-integrated-page':(is_singular('post')?' feng-article-page':''); ?>">
+<?php
+$feng_header_logo = trim( (string) feng_setting( 'header_logo', '' ) );
+if ( ! $feng_header_logo ) {
+ $feng_custom_logo = (int) get_theme_mod( 'custom_logo', 0 );
+ if ( $feng_custom_logo ) $feng_header_logo = wp_get_attachment_image_url( $feng_custom_logo, 'full' ) ?: '';
+}
+if ( ! $feng_header_logo ) $feng_header_logo = get_site_icon_url( 192 );
+if ( ! $feng_header_logo ) $feng_header_logo = get_theme_file_uri( '/assets/images/brand/polar-icon.png' );
+?>
 <header class="xf-header xf-container">
  <a class="xf-brand" href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home">
-  <span class="xf-brand__avatar" aria-hidden="true"><?php echo get_avatar( get_option( 'admin_email' ), 96, 'mp', '', array( 'force_display' => true, 'loading' => 'eager', 'decoding' => 'async' ) ); ?></span>
+  <span class="xf-brand__avatar" aria-hidden="true"><img src="<?php echo esc_url( $feng_header_logo ); ?>" width="32" height="32" alt="" loading="eager" decoding="async"></span>
   <span class="xf-brand__title"><?php bloginfo( 'name' ); ?><small><?php bloginfo( 'description' ); ?></small></span>
  </a>
  <nav class="xf-nav" aria-label="<?php esc_attr_e( '主导航', 'feng' ); ?>">

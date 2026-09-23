@@ -1,6 +1,7 @@
 <?php
 if(!defined('ABSPATH'))exit;
-$portrait=feng_setting('hero_portrait','')?:get_avatar_url(get_option('admin_email'),array('size'=>320));
+$portrait=feng_setting('profile_avatar','')?:feng_setting('hero_portrait','');
+if(!$portrait)$portrait=get_avatar_url(get_option('admin_email'),array('size'=>320));
 $photos=array();for($i=1;$i<=4;$i++){ $url=feng_setting('hero_photo_'.$i,'');if($url)$photos[]=$url; }
 $name=feng_setting('profile_name','')?:get_bloginfo('name');
 $now=new DateTimeImmutable('today',wp_timezone());$start=$now->modify('-89 days');

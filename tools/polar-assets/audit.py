@@ -11,7 +11,7 @@ for group in ('styles','scripts','admin_scripts'):
  if len(values)!=len(set(values)):errors.append('Duplicate source in '+group)
 for source in order['scripts'].values():
  if not (base/'source'/source).is_file():errors.append('Missing script: '+source)
-listed={Path(v).name for v in order['scripts'].values()}|set(order['admin_scripts'].values())|{'header-lucide.bundle.js','stat-roll.js'}
+listed={Path(v).name for v in order['scripts'].values()}|set(order['admin_scripts'].values())|{'header-lucide.bundle.js','stat-roll.js','article-media.js'}
 for p in (base/'source/assets/js').glob('*.js'):
  if p.name not in listed:errors.append('Unlisted business script: '+p.name)
 listedcss={Path(v).name for v in order['styles'].values() if not v.startswith('https:')}|{'admin.css','admin-square.css','admin-skin.css','admin-customizer.css','editor.css'}
