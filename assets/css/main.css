@@ -4073,7 +4073,7 @@ body:has(.feng-comment-form :is(input,textarea):focus) .feng-reading-tools { vis
 .feng-heatmap-legend{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}.feng-heatmap-legend i{display:block;width:10px;height:10px;border-radius:2px;}.feng-heatmap-legend span:first-child{margin-right:3px;}.feng-heatmap-legend span:last-child{margin-left:3px;}
 @media(max-width:700px){.feng-heatmap{gap:3px;}}
 
-.feng-hero-welcome-row .feng-mini-activity{margin:0;gap:8px;}.feng-hero-welcome-row .feng-mini-caption{font-size:12px;}.feng-hero-welcome-row .feng-mini-bars{height:24px;}
+.feng-hero-welcome-row .feng-mini-activity{margin:0;gap:8px;flex-wrap:nowrap;}.feng-hero-welcome-row [data-github-slot]{display:inline-flex;align-items:center;gap:10px;white-space:nowrap;}.feng-hero-welcome-row .feng-mini-caption{font-size:12px;}.feng-hero-welcome-row .feng-mini-bars{order:-1;flex:none;height:24px;}
 
 .feng-profile-hero .feng-profile-top+.feng-profile-bottom{border-top:1px solid var(--xf-line);padding-top:22px;margin-top:18px;}
 
