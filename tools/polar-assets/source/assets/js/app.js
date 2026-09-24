@@ -525,16 +525,46 @@
       && !/\.(?:zip|pdf|jpg|jpeg|png|webp|gif|svg|mp[34]|webm|xml|json|txt|css|js)$/i.test(url.pathname)
       && !['preview', 'customize_changeset_uuid', 'rest_route', 'action', '_wpnonce', 'add-to-cart'].some(k => url.searchParams.has(k));
   }
+  function pageScript(node) {
+    if (!node.src) return /^document\.getElementById\(\s*["']ak_js_1["']/.test(node.textContent.trim());
+    const url = new URL(node.src, location.href);
+    return /\/(?:wp-includes\/js\/comment-reply(?:\.min)?\.js|assets\/vendor\/highlight\/highlight\.min\.js|assets\/js\/article-media\.js|wp-content\/plugins\/akismet\/_inc\/akismet-frontend\.js)$/.test(url.pathname)
+      || url.hostname === 'litezoom.dev' && url.pathname === '/litezoom.min.js'
+      || url.hostname === 'api.jieqi.dev' && url.pathname === '/v1/widget.js';
+  }
   function scripts(doc) {
-    // No fetched script is executed. Only pages with an identical runtime can be exchanged.
+    // Known page enhancers can load after a shell swap; other runtime scripts must still match.
     // Core may append its emoji renderer after load; it is not a new page dependency.
     return [...doc.querySelectorAll('script')].filter(s => {
+      if (pageScript(s)) return false;
       if (!s.src) return true;
       const url = new URL(s.src, location.href);
       return !(url.origin === location.origin && /\/wp-includes\/js\/wp-emoji-release(?:\.min)?\.js$/.test(url.pathname));
     }).map(s => JSON.stringify([
       s.getAttribute('src'), s.getAttribute('type'), s.getAttribute('integrity'), s.textContent.trim()
     ])).sort().join('\n');
+  }
+  async function loadPageScripts(doc) {
+    const akismetTime = document.getElementById('ak_js_1');
+    if (akismetTime) {
+      const timestamp = String(Date.now());
+      akismetTime.value = timestamp;
+      akismetTime.setAttribute('value', timestamp);
+    }
+    for (const source of doc.querySelectorAll('script[src]')) {
+      if (!pageScript(source)) continue;
+      const url = new URL(source.src, location.href);
+      const akismet = /\/wp-content\/plugins\/akismet\/_inc\/akismet-frontend\.js$/.test(url.pathname);
+      if (!akismet && [...document.scripts].some(script => script.src === source.src)) continue;
+      await new Promise(resolve => {
+        const script = document.createElement('script');
+        script.src = source.src;
+        script.async = false;
+        script.onload = resolve;
+        script.onerror = resolve;
+        document.body.append(script);
+      });
+    }
   }
   function unsupported(doc) {
     return doc.querySelector('[data-wp-interactive], [data-xf-native], iframe')
@@ -651,6 +681,7 @@
       syncScrollChrome();
       savePosition();
       announce(`已打开：${doc.title}`);
+      await loadPageScripts(doc);
     } catch (error) {
       styles?.cancel();
       if (id !== navigationId) return;
