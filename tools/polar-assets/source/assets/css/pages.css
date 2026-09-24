@@ -1156,9 +1156,9 @@ body :is(.feng-calendar-activity,.feng-profile-calendar) [data-level]:is(:hover,
 .feng-field-icon>.feng-icon{display:flex;align-items:center;justify-content:center;width:16px;height:16px;font-size:16px;line-height:1;}
 .feng-field-icon>.feng-icon::before{line-height:1;}
 
-/* Image-free category tiles sit 30% shorter than covered tiles. */
-.feng-article-hub .feng-article-hub__tabs button[data-watermark=""]{align-self:center;min-height:57px;margin-inline:6px;padding:8px 6px;border:1px solid var(--xf-line);border-radius:6px;}
-@media(max-width:700px){.feng-article-hub .feng-article-hub__tabs button[data-watermark=""]{min-height:49px;}}
+/* Keep category cells joined; compact the whole row when no category has a cover. */
+.feng-article-hub .feng-article-hub__tabs:not(:has(button[data-watermark]:not([data-watermark=""]))) button{min-height:57px;padding-block:8px;}
+@media(max-width:700px){.feng-article-hub .feng-article-hub__tabs:not(:has(button[data-watermark]:not([data-watermark=""]))) button{min-height:49px;}}
 /* The newly selected comment gets a quiet inset highlight, not an outer blue ring. */
 .feng-comment-list .feng-comment:target>.feng-comment__body>.feng-comment__main{outline:none;border-color:color-mix(in srgb,var(--xf-accent) 24%,var(--bubble-border,var(--xf-line)));box-shadow:0 4px 16px rgb(0 0 0 / .05);}
 @keyframes feng-comment-arrive{from{box-shadow:0 4px 18px color-mix(in srgb,var(--xf-accent) 10%,transparent)}to{box-shadow:0 4px 16px transparent}}
