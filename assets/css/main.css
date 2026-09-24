@@ -4516,3 +4516,8 @@ body.admin-bar .feng-travel-world[data-travel-fullscreen]{top:32px;height:calc(1
 /* The newly selected comment gets a quiet inset highlight, not an outer blue ring. */
 .feng-comment-list .feng-comment:target>.feng-comment__body>.feng-comment__main{outline:none;border-color:color-mix(in srgb,var(--xf-accent) 24%,var(--bubble-border,var(--xf-line)));box-shadow:0 4px 16px rgb(0 0 0 / .05);}
 @keyframes feng-comment-arrive{from{box-shadow:0 4px 18px color-mix(in srgb,var(--xf-accent) 10%,transparent)}to{box-shadow:0 4px 16px transparent}}
+
+/* WordPress moves the reply form inside a comment; keep it clear of the bubble above. */
+.feng-comments .feng-comment-list #respond{margin-top:20px;}
+.feng-comments .feng-comment-list .children #respond{margin-top:16px;}
+@media(max-width:600px){.feng-comments .feng-comment-list #respond{margin-top:16px;}}
