@@ -809,7 +809,6 @@ if(window.polarEnabledScripts.includes("xf-app")){
           if(result.data.edit)try{sessionStorage.setItem('feng-comment-edit-'+result.data.edit.id,JSON.stringify(result.data.edit));}catch{}
           message.textContent = result.data.message;
           showCommentSuccess(result.data.message);
-          window.fengToast?.(result.data.message);
           if (textarea) textarea.value = '';
           announce(result.data.message);
           if (result.data.url && safeURL(result.data.url)) {

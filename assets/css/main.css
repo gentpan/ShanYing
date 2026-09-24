@@ -4509,3 +4509,10 @@ body.admin-bar .feng-travel-world[data-travel-fullscreen]{top:32px;height:calc(1
 .feng-archive-month>header{background:transparent;border-top:0;padding:12px 0 6px;}
 .feng-archive-month li{padding-inline:0;}
 
+
+/* Image-free category tiles sit 30% shorter than covered tiles. */
+.feng-article-hub .feng-article-hub__tabs button[data-watermark=""]{align-self:center;min-height:57px;margin-inline:6px;padding:8px 6px;border:1px solid var(--xf-line);border-radius:6px;}
+@media(max-width:700px){.feng-article-hub .feng-article-hub__tabs button[data-watermark=""]{min-height:49px;}}
+/* The newly selected comment gets a quiet inset highlight, not an outer blue ring. */
+.feng-comment-list .feng-comment:target>.feng-comment__body>.feng-comment__main{outline:none;border-color:color-mix(in srgb,var(--xf-accent) 24%,var(--bubble-border,var(--xf-line)));box-shadow:0 4px 16px rgb(0 0 0 / .05);}
+@keyframes feng-comment-arrive{from{box-shadow:0 4px 18px color-mix(in srgb,var(--xf-accent) 10%,transparent)}to{box-shadow:0 4px 16px transparent}}
