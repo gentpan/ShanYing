@@ -47,6 +47,6 @@
    });
   });
  }
- document.addEventListener('xf:mounted',mountEdits);document.addEventListener('xf:before-unmount',()=>{timers.forEach(clearTimeout);document.querySelector('.feng-self-edit-dialog')?.remove();});
+ document.addEventListener('xf:mounted',mountEdits);document.addEventListener('feng:comments-refreshed',mountEdits);document.addEventListener('xf:before-unmount',()=>{timers.forEach(clearTimeout);document.querySelector('.feng-self-edit-dialog')?.remove();});
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mountEdits,{once:true});else mountEdits();
 })();

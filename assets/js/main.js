@@ -789,6 +789,27 @@ if(window.polarEnabledScripts.includes("xf-app")){
         layoutEmojis();
       }
       const config = commentForm.querySelector('[data-feng-comment-endpoint]');
+      const renderSubmittedComment = data => {
+        const region = commentForm.closest('#comments');
+        if (!region || typeof data.commentsHtml !== 'string') return false;
+        const nextList = document.createElement('ol');
+        nextList.className = 'xf-comment-list feng-comment-list';
+        nextList.innerHTML = data.commentsHtml;
+        const added = nextList.querySelector(`#comment-${data.edit?.id}`);
+        if (!added) return false;
+        if (commentForm.querySelector('[name=comment_parent]')?.value !== '0') region.querySelector('#cancel-comment-reply-link')?.click();
+        const oldList = region.querySelector('.feng-comment-list');
+        const respond = commentForm.closest('#respond');
+        if (respond && oldList?.contains(respond)) region.append(respond);
+        if (oldList) oldList.replaceWith(nextList);
+        else region.insertBefore(nextList, region.querySelector(':scope > #respond'));
+        region.querySelector(':scope > .feng-empty')?.remove();
+        const heading = region.querySelector('.feng-group-title h2');
+        if (heading) heading.replaceChildren(...(heading.firstElementChild ? [heading.firstElementChild.cloneNode(true)] : []), document.createTextNode(`${data.commentCount} 条评论`));
+        document.dispatchEvent(new Event('feng:comments-refreshed'));
+        requestAnimationFrame(() => added.scrollIntoView({ block: 'center', behavior: reduced.matches ? 'instant' : 'smooth' }));
+        return true;
+      };
       if (config) commentForm.addEventListener('submit', async event => {
         event.preventDefault();
         if (commentForm.dataset.sending) return;
@@ -811,7 +832,9 @@ if(window.polarEnabledScripts.includes("xf-app")){
           showCommentSuccess(result.data.message);
           if (textarea) textarea.value = '';
           announce(result.data.message);
-          if (result.data.url && safeURL(result.data.url)) {
+          let updated = false;
+          try { updated = renderSubmittedComment(result.data); } catch { /* preserve the successful submission and use navigation below */ }
+          if (!updated && result.data.url && safeURL(result.data.url)) {
             if (document.querySelector('meta[name="xf-navigation"]')?.content === 'on') {await navigate(result.data.url);const anchor=document.getElementById(new URL(result.data.url).hash.slice(1));anchor?.scrollIntoView({block:'center',behavior:reduced.matches?'instant':'smooth'});}
             else {
               // Native navigation needs a short beat for the success stroke to finish.
@@ -1127,7 +1150,7 @@ if(window.polarEnabledScripts.includes("xf-app")){
  function pump(){while(running<4&&queue.length&&!controller.signal.aborted){const node=queue.shift();running++;fetch(JSON.parse(document.getElementById('feng-config')?.textContent||'{}').commentLocationEndpoint+node.dataset.commentGeo,{signal:controller.signal}).then(r=>{if(!r.ok)throw Error();return r.json();}).then(data=>{if(!node.isConnected)return;const label=node.querySelector('[data-geo-label]');label.textContent=data.label||'所在地未知';if(/^[a-z]{2}$/.test(data.code||'')){const img=document.createElement('img');img.src='https://flagcdn.io/flags/4x3/'+data.code+'.svg';img.alt='';img.width=18;img.height=14;img.addEventListener('error',()=>img.remove(),{once:true});node.prepend(img);}}).catch(()=>{if(!controller.signal.aborted){node.querySelector('[data-geo-label]').textContent='所在地未知';}}).finally(()=>{running--;pump();});}}
  const observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){observer.unobserve(entry.target);queue.push(entry.target);}});pump();},{rootMargin:'200px'});nodes.forEach(n=>observer.observe(n));cleanup=()=>{controller.abort();observer.disconnect();};
  }
- document.addEventListener('xf:mounted',mount);document.addEventListener('xf:before-unmount',()=>cleanup());if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
+ document.addEventListener('xf:mounted',mount);document.addEventListener('feng:comments-refreshed',mount);document.addEventListener('xf:before-unmount',()=>cleanup());if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();
 
 }
@@ -2019,7 +2042,7 @@ if(window.polarEnabledScripts.includes("feng-comment-profile")){
    });
   });
  }
- document.addEventListener('xf:mounted',mountEdits);document.addEventListener('xf:before-unmount',()=>{timers.forEach(clearTimeout);document.querySelector('.feng-self-edit-dialog')?.remove();});
+ document.addEventListener('xf:mounted',mountEdits);document.addEventListener('feng:comments-refreshed',mountEdits);document.addEventListener('xf:before-unmount',()=>{timers.forEach(clearTimeout);document.querySelector('.feng-self-edit-dialog')?.remove();});
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mountEdits,{once:true});else mountEdits();
 })();
 

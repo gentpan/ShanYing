@@ -131,7 +131,15 @@ function feng_submit_comment() {
  if(!$consent && 'unapproved'===wp_get_comment_status($comment) && $comment->comment_author_email) $url=add_query_arg(array('unapproved'=>$comment->comment_ID,'moderation-hash'=>wp_hash($comment->comment_date_gmt)),$url);
  $url=wp_validate_redirect(apply_filters('comment_post_redirect',$url,$comment),get_permalink($post_id));
  $edit_token=wp_generate_password(40,false,false);update_comment_meta($comment->comment_ID,'_feng_edit_token',hash('sha256',$edit_token));
- wp_send_json_success(array('edit'=>array('id'=>(int)$comment->comment_ID,'token'=>$edit_token,'expires'=>time()+60),'message'=>'1'===$comment->comment_approved?'留言已发布。':'留言已提交，审核通过后会公开显示。','url'=>$url));
+ global $wp_query;
+ $approved=get_comments(array('post_id'=>$post_id,'status'=>'approve','orderby'=>'comment_date_gmt','order'=>'ASC','number'=>0));
+ $wp_query->comments=$approved;
+ $visible=$approved;
+ if('1'!==$comment->comment_approved)$visible[]=$comment;
+ ob_start();
+ wp_list_comments(array('style'=>'ol','short_ping'=>true,'avatar_size'=>40,'callback'=>'feng_comment','per_page'=>0,'page'=>1),$visible);
+ $comments_html=ob_get_clean();
+ wp_send_json_success(array('edit'=>array('id'=>(int)$comment->comment_ID,'token'=>$edit_token,'expires'=>time()+60),'message'=>'1'===$comment->comment_approved?'留言已发布。':'留言已提交，审核通过后会公开显示。','url'=>$url,'commentsHtml'=>$comments_html,'commentCount'=>(int)get_comments_number($post_id)));
 }
 add_action('wp_ajax_feng_comment','feng_submit_comment');
 add_action('wp_ajax_nopriv_feng_comment','feng_submit_comment');
