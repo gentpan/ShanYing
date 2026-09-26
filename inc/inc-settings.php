@@ -9,6 +9,7 @@ function feng_settings_schema() {
  foreach(get_categories(array('hide_empty'=>false)) as $category)$category_options[(string)$category->term_id]=$category->name;
  return array(
   'appearance' => array( 'title' => '外观与交互', 'fields' => array(
+   'visitor_ip_mode'=>array('访客 IP 获取方式','select','direct',array('direct'=>'直连服务器','cdn'=>'使用 CDN（阿里云 / 腾讯云 / Cloudflare）')),
    'admin_appearance'=>array('后台外观主题','select','native',array('native'=>'WordPress 原生','polar'=>'ShanYing · 极夜工作台')),
    'editor_mode'=>array('文章与页面编辑器','select','classic',array('classic'=>'经典编辑器（传统可视化 / 文本）','block'=>'区块编辑器（Gutenberg）')),
    'images_webp'=>array('上传图片自动转换为 WebP','checkbox',true),
@@ -135,6 +136,11 @@ function feng_register_settings() {
  register_setting('feng_settings_group','feng_settings',array('type'=>'array','sanitize_callback'=>'feng_sanitize_settings','default'=>array()));
 }
 add_action('admin_init','feng_register_settings');
+// Drop the previous visitor location when the address source changes.
+add_action('update_option_feng_settings',static function($old,$new){
+ if(($old['visitor_ip_mode']??'direct')!==($new['visitor_ip_mode']??'direct'))delete_transient('polar_latest_visitor_location');
+},10,2);
+
 function feng_admin_menu() { add_theme_page('ShanYing 主题设置','ShanYing 设置','manage_options','feng-settings','feng_settings_screen'); }
 add_action('admin_menu','feng_admin_menu');
 function feng_admin_assets($hook) {
@@ -181,7 +187,7 @@ function feng_settings_screen() {
  elseif($field[1]==='select') { ?><select id="<?php echo esc_attr($input_id); ?>" name="<?php echo esc_attr($name); ?>"><?php foreach($field[3] as $option=>$label) { ?><option value="<?php echo esc_attr($option); ?>" <?php selected($value,$option); ?>><?php echo esc_html($label); ?></option><?php } ?></select><?php }
  elseif(in_array($field[1],array('textarea','code'),true)) { ?><textarea class="large-text" rows="3" id="<?php echo esc_attr($input_id); ?>" name="<?php echo esc_attr($name); ?>"><?php echo esc_textarea($value); ?></textarea><?php }
  else { $media=in_array($field[1],array('image','video'),true); $type=$media?($field[1]==='video'?'number':'url'):$field[1]; ?><input class="regular-text" type="<?php echo esc_attr($type); ?>" id="<?php echo esc_attr($input_id); ?>" name="<?php echo esc_attr($name); ?>" value="<?php echo esc_attr($value); ?>" <?php if($field[1]==='number') echo 'min="1" max="60"'; ?>><?php if($media) { ?> <button type="button" class="button feng-media-icon" data-feng-media="<?php echo esc_attr($field[1]); ?>" data-feng-target="<?php echo esc_attr($input_id); ?>" aria-label="选择媒体" title="选择媒体"><span class="dashicons dashicons-format-image" aria-hidden="true"></span></button> <button type="button" class="button feng-media-icon feng-media-icon--clear" data-feng-clear="<?php echo esc_attr($input_id); ?>" aria-label="清除已选媒体" title="清除已选媒体（不删除媒体库文件）"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button><?php } } ?>
- </div><?php if($key==='analytics_code'): ?><p class="description">粘贴统计平台提供的完整代码，仅具有 unfiltered_html 权限的管理员可修改。启用后输出到页脚，支持带 defer 的脚本。</p><?php elseif($key==='images_webp'): ?><p class="description">新上传的 JPEG 和静态 PNG 转为 WebP（质量 82）；保留透明度，GIF、动画 PNG、SVG 和已有 WebP 保持原格式。失败时保留原图。</p><?php elseif($key==='disable_revisions'): ?><p class="description">只影响后续保存，不删除已有修订。自动保存保留。</p><?php elseif($key==='remove_category_base'): ?><p class="description">保存后自动更新分类路由。与已有页面地址冲突的分类保留原链接。</p><?php elseif($key==='jieqi_enabled'): ?><p class="description">使用节期的邮票风格卡片，按北京时间判断显示时机。访客可以关闭弹出的卡片，站点总开关在此设置。</p><?php elseif($key==='xf_eyebrow'): ?><p class="description">Hero 标题使用<a href="<?php echo esc_url(admin_url('options-general.php')); ?>">站点副标题</a>，这里设置标题上方的欢迎语。</p><?php elseif($key==='header_logo'): ?><p class="description">菜单栏使用此 LOGO；留空时使用 WordPress 站点图标。与首页 Hero 的个人头像分别设置。</p><?php elseif($key==='pet_side'): ?><p class="description">首页显示在最新说说右侧，其余页面使用此位置。</p><?php elseif($key==='profile_avatar'): ?><p class="description">首页 Hero 正面的第一张照片使用这张头像；留空时使用备用 Hero 主图或管理员邮箱头像。关于页仍使用管理员邮箱对应的 Gravatar。</p><?php endif; ?></td></tr><?php endforeach; ?></table>
+ </div><?php if($key==='visitor_ip_mode'): ?><p class="description">默认直连服务器，使用连接 IP。网站使用 CDN 时请选择 CDN，读取回源请求中的访客 IP；用于页脚访客地区、评论地区与访客天气。CDN 模式直接采用转发请求头。</p><?php elseif($key==='analytics_code'): ?><p class="description">粘贴统计平台提供的完整代码，仅具有 unfiltered_html 权限的管理员可修改。启用后输出到页脚，支持带 defer 的脚本。</p><?php elseif($key==='images_webp'): ?><p class="description">新上传的 JPEG 和静态 PNG 转为 WebP（质量 82）；保留透明度，GIF、动画 PNG、SVG 和已有 WebP 保持原格式。失败时保留原图。</p><?php elseif($key==='disable_revisions'): ?><p class="description">只影响后续保存，不删除已有修订。自动保存保留。</p><?php elseif($key==='remove_category_base'): ?><p class="description">保存后自动更新分类路由。与已有页面地址冲突的分类保留原链接。</p><?php elseif($key==='jieqi_enabled'): ?><p class="description">使用节期的邮票风格卡片，按北京时间判断显示时机。访客可以关闭弹出的卡片，站点总开关在此设置。</p><?php elseif($key==='xf_eyebrow'): ?><p class="description">Hero 标题使用<a href="<?php echo esc_url(admin_url('options-general.php')); ?>">站点副标题</a>，这里设置标题上方的欢迎语。</p><?php elseif($key==='header_logo'): ?><p class="description">菜单栏使用此 LOGO；留空时使用 WordPress 站点图标。与首页 Hero 的个人头像分别设置。</p><?php elseif($key==='pet_side'): ?><p class="description">首页显示在最新说说右侧，其余页面使用此位置。</p><?php elseif($key==='profile_avatar'): ?><p class="description">首页 Hero 正面的第一张照片使用这张头像；留空时使用备用 Hero 主图或管理员邮箱头像。关于页仍使用管理员邮箱对应的 Gravatar。</p><?php endif; ?></td></tr><?php endforeach; ?></table>
  <?php if($id==='appearance'): ?><div class="feng-native-links"><h3>站点基础设置</h3><p>直接使用 WordPress 管理站点名称、副标题和导航。</p></div><?php endif; ?>
  </section><?php endforeach; feng_settings_save_bar(); ?></form>
  <?php feng_database_cleanup_form(); ?></div></div></div>

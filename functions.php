@@ -4,6 +4,9 @@ if (!defined('ABSPATH')) exit;
 
 /** CDN client address shared by footer statistics, weather and comments. */
 function feng_real_ip(){
+ $peer=trim((string)($_SERVER['REMOTE_ADDR']??''));
+ $peer=filter_var($peer,FILTER_VALIDATE_IP)!==false?$peer:'';
+ if(feng_setting('visitor_ip_mode','direct')!=='cdn')return $peer;
  $public=static function($ip){return filter_var($ip,FILTER_VALIDATE_IP,FILTER_FLAG_NO_PRIV_RANGE|FILTER_FLAG_NO_RES_RANGE)!==false;};
  // Prefer the current provider's dedicated header to generic proxy chains.
  foreach(array('HTTP_ALI_REAL_CLIENT_IP','HTTP_ALI_CDN_REAL_IP','HTTP_CF_CONNECTING_IPV6','HTTP_CF_CONNECTING_IP') as $header){
@@ -18,8 +21,7 @@ function feng_real_ip(){
  }
  $ip=trim((string)($_SERVER['HTTP_X_REAL_IP']??''));
  if($public($ip))return $ip;
- $peer=trim((string)($_SERVER['REMOTE_ADDR']??''));
- return filter_var($peer,FILTER_VALIDATE_IP)!==false?$peer:'';
+ return $peer;
 }
 // Covers AJAX, core comment forms and REST comment submissions equally.
 add_filter('pre_comment_user_ip',static function($ip){
