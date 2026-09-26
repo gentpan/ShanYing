@@ -2,18 +2,47 @@
 /** ShanYing: shared helpers live here; larger features remain in inc/. */
 if (!defined('ABSPATH')) exit;
 
-/** Resolve real client IP behind FrankenPHP reverse proxy. */
-function feng_real_ip(){
- $ip=$_SERVER['REMOTE_ADDR']??'';
- if(filter_var($ip,FILTER_VALIDATE_IP,FILTER_FLAG_NO_PRIV_RANGE|FILTER_FLAG_NO_RES_RANGE))return $ip;
- foreach(array('HTTP_X_FORWARDED_FOR','HTTP_X_REAL_IP') as $h){
-  if(empty($_SERVER[$h]))continue;
-  $list=explode(',',$_SERVER[$h]);
-  $first=trim($list[0]);
-  if(filter_var($first,FILTER_VALIDATE_IP,FILTER_FLAG_NO_PRIV_RANGE|FILTER_FLAG_NO_RES_RANGE))return $first;
- }
- return $ip;
+/** Resolve forwarded addresses only from explicitly trusted origin proxies. */
+function feng_ip_in_cidr($ip,$cidr){
+ $parts=explode('/',trim((string)$cidr),2);
+ $address=@inet_pton($ip);$network=@inet_pton($parts[0]);
+ if($address===false||$network===false||strlen($address)!==strlen($network))return false;
+ $bits=isset($parts[1])&&ctype_digit($parts[1])?(int)$parts[1]:(isset($parts[1])?-1:strlen($address)*8);
+ if($bits<0||$bits>strlen($address)*8)return false;
+ $bytes=intdiv($bits,8);$remainder=$bits%8;
+ return substr($address,0,$bytes)===substr($network,0,$bytes)&&(!$remainder||((ord($address[$bytes])^ord($network[$bytes]))&(255<<(8-$remainder)))===0);
 }
+function feng_trusted_proxy($ip){
+ // Populate from the CDN console's origin IP list, never from visitor headers.
+ $ranges=apply_filters('feng_trusted_proxy_cidrs',get_option('feng_trusted_proxy_cidrs',array()));
+ if(!is_array($ranges))return false;
+ foreach($ranges as $range)if(is_string($range)&&feng_ip_in_cidr($ip,$range))return true;
+ return false;
+}
+function feng_real_ip(){
+ $peer=trim((string)($_SERVER['REMOTE_ADDR']??''));
+ if(!filter_var($peer,FILTER_VALIDATE_IP))return '';
+ if(!feng_trusted_proxy($peer))return $peer;
+ // ESA and CDN use different dedicated real-client headers.
+ foreach(array('HTTP_ALI_REAL_CLIENT_IP','HTTP_ALI_CDN_REAL_IP') as $header){
+  $ip=trim((string)($_SERVER[$header]??''));
+  if(filter_var($ip,FILTER_VALIDATE_IP,FILTER_FLAG_NO_PRIV_RANGE|FILTER_FLAG_NO_RES_RANGE))return $ip;
+ }
+ // Walk from the nearest hop; a visitor cannot override this with an XFF prefix.
+ $chain=explode(',',(string)($_SERVER['HTTP_X_FORWARDED_FOR']??''));
+ if(count($chain)>32)return $peer;
+ foreach(array_reverse($chain) as $hop){
+  $ip=trim($hop);
+  if(!filter_var($ip,FILTER_VALIDATE_IP))return $peer;
+  if(feng_trusted_proxy($ip))continue;
+  return filter_var($ip,FILTER_VALIDATE_IP,FILTER_FLAG_NO_PRIV_RANGE|FILTER_FLAG_NO_RES_RANGE)?$ip:$peer;
+ }
+ return $peer;
+}
+// Covers AJAX, core comment forms and REST comment submissions equally.
+add_filter('pre_comment_user_ip',static function($ip){
+ return isset($_SERVER['REMOTE_ADDR'])?feng_real_ip():$ip;
+});
 
 require_once get_template_directory() . '/inc/inc-settings.php';
 
