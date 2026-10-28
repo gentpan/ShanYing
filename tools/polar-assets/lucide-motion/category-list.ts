@@ -3,9 +3,10 @@ function mount(){
  for(const [el,clean] of mounted)if(!el.isConnected){clean();mounted.delete(el);}
  document.querySelectorAll<HTMLElement>('[data-category-list]').forEach(card=>{
   if(mounted.has(card))return;
-  const preview=card.querySelector<HTMLImageElement>('.feng-category-list__preview')!;
+  const preview=card.querySelector<HTMLImageElement>('.feng-category-list__preview');
   const base=card.querySelector<HTMLImageElement>('.feng-category-list__base')?.src;
-  const picture=card.querySelector<HTMLElement>('.feng-category-list__picture')!;
+  const picture=card.querySelector<HTMLElement>('.feng-category-list__picture');
+  if(!preview||!picture)return;
   const controller=new AbortController();let version=0,timer:number|undefined;
   const reset=()=>{version++;clearTimeout(timer);picture.classList.remove('is-loading');preview.classList.remove('is-visible');};
   const show=(url:string)=>{
