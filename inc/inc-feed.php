@@ -29,23 +29,6 @@ function feng_friend_avatar($friend,$size=48,$icon_fallback=false){
  $url=!empty($friend->link_image)?$friend->link_image:($hash?'https://gravatar.bluecdn.com/avatar/'.$hash.'?s='.($size*2).'&d=404':$fallback);
  return '<img class="feng-friend-avatar-img" src="'.esc_url($url).'" data-friend-fallback="'.esc_url($fallback).'" width="'.absint($size).'" height="'.absint($size).'" alt="" loading="lazy" decoding="async"><span class="feng-friend-avatar-initial" hidden aria-hidden="true">'.($icon_fallback?'<i class="fa-solid fa-globe" aria-hidden="true"></i>':esc_html(mb_substr(wp_specialchars_decode($friend->link_name),0,1))).'</span>';
 }
-add_action('add_meta_boxes_link',function(){add_meta_box('feng-friend-avatar','邮箱头像','feng_friend_avatar_box','link','side');});
-function feng_friend_avatar_box($link){
- wp_nonce_field('feng_friend_avatar','feng_friend_avatar_nonce');$all=get_option('feng_friend_avatars',array());$v=$all[(int)($link->link_id??0)]??array();
- echo '<p><label for="feng-friend-email">友链站长邮箱</label></p><input type="email" class="widefat" id="feng-friend-email" name="feng_friend_email" autocomplete="off" value=""><p class="description">填写后仅保存 Gravatar 哈希，不额外保存邮箱原文。留空保留设置；未手动指定时，自动匹配已审核评论的网站域名。</p>';
- if(!empty($v['manual']))echo '<p>已设置手动邮箱头像。</p><label><input type="checkbox" name="feng_friend_email_clear" value="1"> 清除手动设置，恢复自动匹配</label>';
- elseif(!empty($v['hash']))echo '<p>已从审核通过的评论匹配头像。</p>';
- else echo '<p>尚未匹配邮箱，将显示网站徽标。</p>';
-}
-function feng_friend_avatar_save($id){
- if(!current_user_can('manage_links')||empty($_POST['feng_friend_avatar_nonce'])||!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['feng_friend_avatar_nonce'])),'feng_friend_avatar'))return;
- $all=get_option('feng_friend_avatars',array());if(!isset($all[$id]))return;
- if(!empty($_POST['feng_friend_email_clear']))$all[$id]['manual']='';
- $email=isset($_POST['feng_friend_email'])&&is_string($_POST['feng_friend_email'])?trim(wp_unslash($_POST['feng_friend_email'])):'';
- if(is_email($email))$all[$id]['manual']=md5(strtolower($email));update_option('feng_friend_avatars',$all,false);
-}
-add_action('add_link','feng_friend_avatar_save',60);add_action('edit_link','feng_friend_avatar_save',60);
-add_action('wp_enqueue_scripts',function(){wp_enqueue_script('feng-friend-avatar',get_theme_file_uri('/assets/js/friend-avatar.js'),array(),feng_asset_version('/assets/js/friend-avatar.js'),true);});
 ?>
 <?php
 /** feed */
@@ -272,38 +255,6 @@ function feng_feed_list_ajax() {
 }
 add_action('wp_ajax_feng_feed_list','feng_feed_list_ajax');
 add_action('wp_ajax_nopriv_feng_feed_list','feng_feed_list_ajax');
-function feng_feed_assets() {
- wp_enqueue_style('feng-feed',get_theme_file_uri('/assets/css/feed.css'),array('feng-navigation'),feng_asset_version('/assets/css/feed.css'));
- wp_enqueue_script('feng-feed',get_theme_file_uri('/assets/js/feed.js'),array('xf-app'),feng_asset_version('/assets/js/feed.js'),array('strategy'=>'defer','in_footer'=>true));
-}
-add_action('wp_enqueue_scripts','feng_feed_assets');
-function feng_feed_admin_assets($hook) {
- if ($hook!=='appearance_page_feng-settings') return;
- wp_enqueue_script('feng-feed-admin',get_theme_file_uri('/assets/js/feed-admin.js'),array(),feng_asset_version('/assets/js/feed-admin.js'),true);
-}
-add_action('admin_enqueue_scripts','feng_feed_admin_assets');
-function feng_feed_settings_status() {
- $data=feng_feed_data(); $cycle=$data['cycle']; $next=wp_next_scheduled('feng_feed_refresh'); ?>
- <p>在<a href="<?php echo esc_url(admin_url('link-manager.php')); ?>">友情链接</a>中编辑站点，展开「高级」，填写原生「RSS 地址」。支持 RSS / Atom，仅同步公开可见的友链。</p>
- <p>菜单角标按 WordPress 站点时区（<?php echo esc_html(wp_timezone_string()); ?>）统计今日零点后发布、已经同步的文章。首次导入的旧文章不计入今日更新。</p>
- <p>已添加 <?php echo count($data['sources']); ?> 个订阅源 · 今日 <?php echo (int)$data['today']; ?> 篇 · 下次计划：<?php echo $next?esc_html(wp_date('m-d H:i',$next)):'尚未安排'; ?></p>
- <p><button type="button" class="button button-secondary" data-feed-refresh data-endpoint="<?php echo esc_url(admin_url('admin-ajax.php')); ?>" data-nonce="<?php echo esc_attr(wp_create_nonce('feng_feed_refresh')); ?>">立即同步订阅</button> <span data-feed-admin-status role="status"><?php echo !empty($cycle['pending'])?'正在同步，剩余 '.count($cycle['pending']).' 个订阅源。':(!empty($cycle['finished'])?esc_html('上次同步：'.wp_date('m-d H:i',$cycle['finished']).' · 新收录 '.$cycle['added'].' 篇 · 失败 '.$cycle['errors'].' 个源'):'等待首次同步。'); ?></span></p>
- <p class="description">每个友链保留最近 200 篇已获取记录，不下载全文或附件。源站只提供最近几篇时，首次同步也只能获取这些文章。同步失败保留旧记录。定时任务由 WordPress WP-Cron 执行，低访问量站点可能延后；需要准时执行时，可由服务器定时调用 wp-cron.php。</p>
- <?php if(defined('DISABLE_WP_CRON') && DISABLE_WP_CRON) echo '<p class="description">当前环境关闭了 WP-Cron 自动触发。请确认服务器已配置定时调用；手动同步仍可正常使用。</p>'; ?>
- <?php foreach($data['sources'] as $source) if($source['error']) echo '<p class="description">'.esc_html($source['name'].'：'.$source['error']).'</p>'; ?>
- <p><a href="<?php echo esc_url(feng_page_url('subscriptions')); ?>">查看订阅页面</a> · <a href="<?php echo esc_url(admin_url('nav-menus.php')); ?>">把「订阅」添加到自定义菜单</a></p>
- <?php
-}
-function feng_feed_admin_refresh() {
- if ($_SERVER['REQUEST_METHOD']!=='POST' || !current_user_can('manage_options')) wp_send_json_error(array('message'=>'没有同步权限。'),403);
- check_ajax_referer('feng_feed_refresh','nonce');
- $start=isset($_POST['start']) && $_POST['start']==='1';
- if ($start && get_transient('feng_feed_manual_cooldown')) wp_send_json_error(array('message'=>'刚刚同步过，请一分钟后再试。'),429);
- if ($start) set_transient('feng_feed_manual_cooldown',1,60);
- $cycle=feng_feed_run($start);
- wp_send_json_success(array('pending'=>count($cycle['pending']??array()),'done'=>$cycle['done']??0,'total'=>$cycle['total']??0,'added'=>$cycle['added']??0,'errors'=>$cycle['errors']??0));
-}
-add_action('wp_ajax_feng_feed_refresh','feng_feed_admin_refresh');
 
 
 // Public applications enter the native link manager as invisible bookmarks.
@@ -358,28 +309,7 @@ function feng_friend_apply(){
 }
 
 // Link-category icons share the article-category SVG / Font Awesome sanitizer.
-function feng_friend_category_icon_field($term=null){
- $code=$term instanceof WP_Term?get_term_meta($term->term_id,'feng_friend_category_icon',true):'';
- wp_nonce_field('feng_friend_category_icon','feng_friend_category_icon_nonce');
- echo '<label for="feng-friend-category-icon">Font Awesome 类名 / SVG 代码</label><textarea id="feng-friend-category-icon" name="feng_friend_category_icon" class="large-text code" rows="4" placeholder="fa-solid fa-code">'.esc_textarea($code).'</textarea><p class="description">可填写 Font Awesome 类名、完整 i 标签或 SVG 代码。留空使用文件夹图标。</p><div style="font-size:24px">'.feng_badge_icon_markup($code).'</div>';
-}
 function feng_friend_category_icon($id){return feng_badge_icon_markup(get_term_meta($id,'feng_friend_category_icon',true))?:feng_badge_icon_markup('fa-regular fa-folder');}
-add_action('link_category_add_form_fields',function(){echo '<div class="form-field">';feng_friend_category_icon_field();echo '</div>';});
-add_action('link_category_edit_form_fields',function($term){echo '<tr class="form-field"><th scope="row">分类图标</th><td>';feng_friend_category_icon_field($term);echo '</td></tr>';});
-function feng_friend_category_icon_save($id){
- $taxonomy=get_taxonomy('link_category');
- if(!$taxonomy||!current_user_can($taxonomy->cap->edit_terms))return;
- $nonce=$_POST['feng_friend_category_icon_nonce']??'';
- if(!is_string($nonce)||!wp_verify_nonce(wp_unslash($nonce),'feng_friend_category_icon'))return;
- if(!isset($_POST['feng_friend_category_icon'])||!is_string($_POST['feng_friend_category_icon']))return;
- $code=feng_badge_icon_code(wp_unslash($_POST['feng_friend_category_icon']));
- if($code)update_term_meta($id,'feng_friend_category_icon',$code);else delete_term_meta($id,'feng_friend_category_icon');
-}
-add_action('created_link_category','feng_friend_category_icon_save');
-add_action('edited_link_category','feng_friend_category_icon_save');
-add_filter('manage_edit-link_category_columns',function($columns){$columns['feng_friend_icon']='图标';return $columns;});
-add_filter('manage_link_category_custom_column',function($content,$column,$id){return $column==='feng_friend_icon'?feng_friend_category_icon($id):$content;},10,3);
-add_action('admin_enqueue_scripts',function(){if(get_current_screen()->taxonomy==='link_category')feng_category_fontawesome();});
 
 function feng_friend_send_code(){
  check_ajax_referer('feng_friend_apply','friend_nonce');
@@ -413,17 +343,6 @@ function feng_friend_verify_code($input,$identity_hash,$link_id){
  delete_transient($key);return true;
 }
 
-add_action('add_meta_boxes_link',function(){add_meta_box('feng-friend-cover','友链封面图',function($link){
- wp_nonce_field('feng_friend_cover','feng_friend_cover_nonce');
- echo '<p><label for="feng-friend-cover-url">独立封面地址（选填）</label></p><input class="widefat" type="url" id="feng-friend-cover-url" name="feng_friend_cover" value="'.esc_attr(get_option('feng_friend_cover_'.(int)($link->link_id??0),'')).'"><p class="description">使用横向图片网址。有封面时展示封面；留空显示完整头像与模糊背景。</p>';
-},'link','side');});
-function feng_friend_cover_save($id){
- if(!current_user_can('manage_links')||!isset($_POST['feng_friend_cover_nonce'],$_POST['feng_friend_cover'])||!is_string($_POST['feng_friend_cover_nonce'])||!is_string($_POST['feng_friend_cover'])||!wp_verify_nonce(wp_unslash($_POST['feng_friend_cover_nonce']),'feng_friend_cover'))return;
- $url=esc_url_raw(wp_unslash($_POST['feng_friend_cover']),array('http','https'));
- if($url)update_option('feng_friend_cover_'.(int)$id,$url,false);else delete_option('feng_friend_cover_'.(int)$id);
-}
-add_action('add_link','feng_friend_cover_save');add_action('edit_link','feng_friend_cover_save');
-add_action('deleted_link',function($id){delete_option('feng_friend_cover_'.(int)$id);});
 
 // Recreational memory-game scores; display names are not verified identities.
 add_action('wp_ajax_feng_friend_game','feng_friend_game');

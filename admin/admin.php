@@ -138,12 +138,33 @@ add_action('admin_init','feng_register_settings');
 function feng_admin_menu() { add_theme_page('ShanYing 主题设置','ShanYing 设置','manage_options','feng-settings','feng_settings_screen'); }
 add_action('admin_menu','feng_admin_menu');
 function feng_admin_assets($hook) {
- if ($hook !== 'appearance_page_feng-settings') return;
- wp_enqueue_media();
- wp_enqueue_style('feng-admin',get_theme_file_uri('/assets/css/admin.css'),array('dashicons'),feng_asset_version('/assets/css/admin.css'));
- wp_enqueue_script('feng-admin',get_theme_file_uri('/assets/js/admin.js'),array(),feng_asset_version('/assets/js/admin.js'),true);
+ $screen=get_current_screen();
+ $settings=$hook==='appearance_page_feng-settings';
+ $editor=in_array($hook,array('post.php','post-new.php'),true)&&$screen&&($screen->post_type??'')==='post';
+ $category=$screen&&($screen->taxonomy??'')==='category';
+ $icon_taxonomy=$screen&&in_array($screen->taxonomy??'',array('category','link_category'),true);
+ $travel=in_array($hook,array('post.php','post-new.php','posts_page_feng-travel'),true);
+ $modules=array();
+ if($settings)array_push($modules,'feng-admin','feng-ai-admin','feng-feed-admin','feng-music-admin');
+ if($editor)$modules[]='feng-ai-admin';
+ if($category)$modules[]='feng-category-badge';
+ if($travel)$modules[]='feng-travel-editor';
+ $modules=array_values(array_intersect(feng_asset_modules('admin'),array_unique($modules)));
+ wp_enqueue_style('shanying-admin',get_theme_file_uri('/assets/css/admin.css'),array('dashicons'),feng_asset_version('/assets/css/admin.css'));
+ if($icon_taxonomy)feng_category_fontawesome();
+ if(!$modules)return;
+ $dependencies=array();
+ if($settings||$editor||$category)wp_enqueue_media();
+ if($editor)array_push($dependencies,'wp-api-fetch','wp-data','wp-core-data');
+ if($category)array_push($dependencies,'jquery','media-views');
+ wp_enqueue_script('shanying-admin',get_theme_file_uri('/assets/js/admin.js'),array_values(array_unique($dependencies)),feng_asset_version('/assets/js/admin.js'),true);
+ $GLOBALS['shanying_script_modules']['shanying-admin']=$modules;
+ if(in_array('feng-ai-admin',$modules,true))wp_localize_script('shanying-admin','fengAI',array('url'=>admin_url('admin-ajax.php'),'nonce'=>wp_create_nonce('feng_ai'),'presets'=>feng_ai_presets()));
 }
 add_action('admin_enqueue_scripts','feng_admin_assets');
+add_action('customize_controls_enqueue_scripts',function(){
+ wp_enqueue_style('shanying-admin',get_theme_file_uri('/assets/css/admin.css'),array('dashicons','customize-controls'),feng_asset_version('/assets/css/admin.css'));
+});
 /** Shared settings shell, using native WordPress controls and save handling. */
 function feng_settings_header() {
  $theme=wp_get_theme(get_template());$name=$theme->get('Name');$version=$theme->get('Version');
@@ -197,27 +218,17 @@ add_filter('use_block_editor_for_post',function($use,$post){
  return in_array($post->post_type,array('post','page'),true)&&feng_setting('editor_mode','classic')==='classic'?false:$use;
 },100,2);
 
-add_action('admin_enqueue_scripts',function(){
- wp_enqueue_style('feng-admin-square',get_theme_file_uri('/assets/css/admin-square.css'),array(),feng_asset_version('/assets/css/admin-square.css'));
-},100);
-
 add_filter('admin_body_class',function($classes){return $classes.(feng_setting('admin_appearance','native')==='polar'?' polar-admin-skin':'');});
-add_action('admin_enqueue_scripts',function(){
- if(feng_setting('admin_appearance','native')==='polar')wp_enqueue_style('polar-admin-skin',get_theme_file_uri('/assets/css/admin-skin.css'),array('common','forms'),feng_asset_version('/assets/css/admin-skin.css'));
-},110);
-
-add_action('customize_controls_enqueue_scripts',function(){
- if(feng_setting('admin_appearance','native')==='polar')wp_enqueue_style('shanying-admin-customizer',get_theme_file_uri('/assets/css/admin-customizer.css'),array('customize-controls'),feng_asset_version('/assets/css/admin-customizer.css'));
-},110);
 
 add_filter('post_date_column_status',function($status){
  if(feng_setting('admin_appearance','native')!=='polar'||!$status)return $status;
  return '<span class="polar-date-status">'.$status.'</span>';
 });
 
-/* TinyMCE edits inside an iframe, so admin chrome CSS cannot reach its canvas. */
 add_filter('tiny_mce_before_init',function($init){
  if(feng_setting('admin_appearance','native')!=='polar')return $init;
- $init['content_style']=($init['content_style']??'').' html{background:#191b1f;color-scheme:dark;}body.mce-content-body{background:#191b1f;color:#eceef1;}body.mce-content-body a{color:#a7d5ff;}body.mce-content-body :is(blockquote,hr,td,th){border-color:#454a53;}';
+ $init['body_class']=trim(($init['body_class']??'').' polar-admin-skin');
  return $init;
 });
+
+require_once __DIR__.'/features.php';

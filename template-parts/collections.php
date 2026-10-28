@@ -7,6 +7,7 @@ foreach($available_groups as $category){if(count($xf_groups)>=5)break;if(!in_arr
 ?>
 <section id="xf-collections" class="xf-collections feng-article-hub" aria-label="文章分类与列表">
  <div hidden><img data-hub-watermark alt="" hidden><p data-hub-description></p></div>
+ <?php get_template_part('template-parts/home-comments'); ?>
  <nav class="feng-article-hub__tabs" aria-label="文章分类">
  <button type="button" data-collection-tab="all" data-watermark="<?php echo esc_url(feng_setting('home_all_cover','')); ?>" data-description="记录生活，也分享实践。" aria-pressed="true" aria-controls="collection-panel-all">全部</button>
  <?php $first=false;foreach($xf_groups as $group): ?><button type="button" data-collection-tab="<?php echo (int)$group->term_id; ?>" data-description="<?php echo esc_attr(wp_strip_all_tags($group->description)?:'关于'.$group->name.'，一些实践与记录。'); ?>" aria-label="<?php echo esc_attr($group->name); ?>" data-hide-label="<?php echo get_term_meta($group->term_id,'feng_category_hide_text',true)==='1'?'true':'false'; ?>" data-watermark="<?php echo esc_url(get_term_meta($group->term_id,'feng_category_cover',true)); ?>" aria-pressed="<?php echo $first?'true':'false'; ?>" aria-controls="collection-panel-<?php echo (int)$group->term_id; ?>"><?php echo esc_html($group->name); ?></button><?php $first=false;endforeach; ?>

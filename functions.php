@@ -26,7 +26,7 @@ add_filter('pre_comment_user_ip',static function($ip){
  return isset($_SERVER['REMOTE_ADDR'])?feng_real_ip():$ip;
 });
 
-require_once get_template_directory() . '/inc/inc-settings.php';
+require_once get_template_directory() . '/admin/admin.php';
 
 require_once get_template_directory() . '/inc/inc-ai.php';
 
@@ -70,35 +70,36 @@ function feng_asset_version( $path ) {
  $file = get_theme_file_path( $path );
  return is_file( $file ) ? (string) filemtime( $file ) : wp_get_theme()->get( 'Version' );
 }
-function feng_enqueue_assets() {
- wp_enqueue_style('feng-code-font',get_theme_file_uri('/assets/css/code-font.css'),array('feng-article'),feng_asset_version('/assets/css/code-font.css'));
- wp_enqueue_style( 'feng-brand-font', 'https://static.bluecdn.com/fonts/alimama-fangyuanti.css', array(), null );
- if ( is_home() || is_front_page() ) {
-  wp_enqueue_style( 'feng-hero-font', 'https://static.bluecdn.com/fonts/zzqxmxht.css', array(), null );
+function feng_asset_modules($context) {
+ static $modules=null;
+ if($modules===null){
+  $file=get_theme_file_path('/inc/modules.json');
+  $modules=is_file($file)?json_decode(file_get_contents($file),true):array();
  }
- if ( is_singular( 'post' ) ) {
-  wp_enqueue_style( 'feng-title-font', 'https://static.bluecdn.com/fonts/kuaikanshijieti.css', array(), null );
- }
- wp_enqueue_style( 'feng', get_stylesheet_uri(), array(), wp_get_theme()->get( 'Version' ) );
- wp_enqueue_style( 'xf-tokens', get_theme_file_uri( '/assets/css/tokens.css' ), array( 'feng' ), feng_asset_version( '/assets/css/tokens.css' ) );
- wp_enqueue_style( 'xf-base', get_theme_file_uri( '/assets/css/base.css' ), array( 'xf-tokens' ), feng_asset_version( '/assets/css/base.css' ) );
- wp_enqueue_style( 'xf-layout', get_theme_file_uri( '/assets/css/layout.css' ), array( 'xf-base' ), feng_asset_version( '/assets/css/layout.css' ) );
- wp_enqueue_style('feng-pages',get_theme_file_uri('/assets/css/pages.css'),array('xf-layout'),feng_asset_version('/assets/css/pages.css'));
- wp_enqueue_style( 'feng-typography', get_theme_file_uri('/assets/css/typography.css'), array('feng-pages','feng-brand-font'), feng_asset_version('/assets/css/typography.css') );
- wp_enqueue_style('feng-cards',get_theme_file_uri('/assets/css/cards.css'),array('feng-typography'),feng_asset_version('/assets/css/cards.css'));
- wp_enqueue_style('feng-article',get_theme_file_uri('/assets/css/article.css'),array('feng-typography'),feng_asset_version('/assets/css/article.css'));
- if ( is_page_template( 'pages/archives.php' ) ) {
-  wp_enqueue_style( 'feng-archives', get_theme_file_uri('/assets/css/archives.css'), array('feng-article'), feng_asset_version('/assets/css/archives.css') );
- }
- wp_enqueue_style('feng-dashboard',get_theme_file_uri('/assets/css/dashboard.css'),array('feng-article'),feng_asset_version('/assets/css/dashboard.css'));
- wp_enqueue_style('feng-navigation',get_theme_file_uri('/assets/css/navigation.css'),array('feng-pages'),feng_asset_version('/assets/css/navigation.css'));
- wp_enqueue_script('feng-navigation',get_theme_file_uri('/assets/js/navigation.js'),array('xf-app'),feng_asset_version('/assets/js/navigation.js'),array('strategy'=>'defer','in_footer'=>true));
- wp_enqueue_script('feng-dashboard',get_theme_file_uri('/assets/js/dashboard.js'),array('xf-app'),feng_asset_version('/assets/js/dashboard.js'),array('strategy'=>'defer','in_footer'=>true));
- wp_enqueue_script('feng-toast',get_theme_file_uri('/assets/js/toast.js'),array(),feng_asset_version('/assets/js/toast.js'),true);
- wp_enqueue_script( 'xf-app', get_theme_file_uri( '/assets/js/app.js' ), array(), feng_asset_version( '/assets/js/app.js' ), array( 'strategy' => 'defer', 'in_footer' => true ) );
- if ( get_option( 'thread_comments' ) && is_singular() && comments_open() ) { wp_enqueue_script( 'comment-reply' ); }
+ return $modules[$context]??array();
 }
-add_action( 'wp_enqueue_scripts', 'feng_enqueue_assets' );
+function feng_enqueue_assets() {
+ $modules=feng_asset_modules('frontend');
+ $disabled=array();
+ if(!feng_setting('music_enabled',true))$disabled[]='feng-music';
+ if(!feng_setting('jieqi_enabled',true))$disabled[]='feng-jieqi';
+ if(!feng_setting('images_fade',true))$disabled[]='feng-image-fade';
+ if(!feng_setting('footer_stats',true))$disabled[]='feng-visitor-stats';
+ if(!feng_setting('pet_enabled',true))array_push($disabled,'feng-pet-motion','feng-pet');
+ if(!is_singular())$disabled[]='feng-article-media';
+ $modules=array_values(array_diff($modules,$disabled));
+ $dependencies=array();
+ if(in_array('feng-article-media',$modules,true)){
+  wp_enqueue_script('feng-litezoom','https://litezoom.dev/litezoom.min.js',array(),null,array('strategy'=>'defer','in_footer'=>false));
+  wp_enqueue_script('feng-highlight',get_theme_file_uri('/assets/vendor/highlight/highlight.min.js'),array(),'11.11.1',array('strategy'=>'defer','in_footer'=>false));
+  $dependencies=array('feng-litezoom','feng-highlight');
+ }
+ wp_enqueue_style('shanying-theme',get_theme_file_uri('/assets/css/main.css'),array(),feng_asset_version('/assets/css/main.css'));
+ wp_enqueue_script('shanying-theme',get_theme_file_uri('/assets/js/main.js'),$dependencies,feng_asset_version('/assets/js/main.js'),array('strategy'=>'defer','in_footer'=>false));
+ $GLOBALS['shanying_script_modules']['shanying-theme']=$modules;
+ if(get_option('thread_comments')&&is_singular()&&comments_open())wp_enqueue_script('comment-reply');
+}
+add_action('wp_enqueue_scripts','feng_enqueue_assets');
 function feng_runtime_marker() {
  printf('<meta name="feng-scheme" content="%s"><meta name="feng-reveal" content="on">',esc_attr(feng_setting('default_scheme','system')));
  printf( '<meta name="xf-navigation" content="%s">', ! is_customize_preview() ? 'on' : 'off' );
@@ -116,60 +117,12 @@ function feng_frontend_config() {
 }
 add_action('wp_head','feng_frontend_config',5);
 
-/** Resolve existing feature registrations into the consolidated front-end assets. */
-add_action('wp_enqueue_scripts',function(){
- $manifest=json_decode(file_get_contents(get_theme_file_path('/inc/asset-bundles.json')),true);
- if(!$manifest)return;
- $styles=wp_styles();$scripts=wp_scripts();$enabled=array();
- foreach($manifest['styles'] as $handle=>$source){
-  if(isset($styles->registered[$handle]))$styles->registered[$handle]->src=false;
- }
- foreach($manifest['scripts'] as $handle=>$source){
-  if(isset($scripts->registered[$handle])){
-   if(wp_script_is($handle,'enqueued'))$enabled[]=$handle;
-   $scripts->registered[$handle]->src=false;
-  }
- }
- wp_enqueue_style('shanying-theme',get_theme_file_uri('/assets/css/main.css'),array(),feng_asset_version('/assets/css/main.css'));
- $dependencies=array_values(array_filter($scripts->queue,fn($handle)=>$handle!=='shanying-theme'));
- wp_enqueue_script('shanying-theme',get_theme_file_uri('/assets/js/main.js'),$dependencies,feng_asset_version('/assets/js/main.js'),true);
- $GLOBALS['shanying_script_modules']['shanying-theme']=$enabled;
-},PHP_INT_MAX);
-
 /** Attach per-request module selection as data, read by the bundle itself. */
 add_filter('script_loader_tag',function($tag,$handle){
  if(!isset($GLOBALS['shanying_script_modules'][$handle]))return $tag;
  return preg_replace('/<script\b/','<script data-shanying-modules="'.esc_attr(wp_json_encode($GLOBALS['shanying_script_modules'][$handle])).'"',$tag,1);
 },10,2);
 
-/** The dashboard keeps its own small bundle and only runs enqueued modules. */
-add_action('admin_enqueue_scripts',function(){
- $scripts=wp_scripts();$enabled=array();$deps=array();
- foreach(array('feng-admin','feng-ai-admin','feng-category-badge','feng-feed-admin','feng-music-admin','feng-travel-editor') as $handle){
-  if(isset($scripts->registered[$handle])){
-   if(wp_script_is($handle,'enqueued')){$enabled[]=$handle;$deps[]=$handle;}
-   $scripts->registered[$handle]->src=false;
-  }
- }
- if($enabled){wp_enqueue_script('shanying-admin',get_theme_file_uri('/assets/js/admin.js'),$deps,feng_asset_version('/assets/js/admin.js'),true);$GLOBALS['shanying_script_modules']['shanying-admin']=$enabled;}
- $styles=wp_styles();
- if(isset($styles->registered['feng-admin-square'])){$styles->registered['feng-admin-square']->src=false;if(!wp_style_is('feng-admin','enqueued'))wp_enqueue_style('feng-admin',get_theme_file_uri('/assets/css/admin.css'),array(),feng_asset_version('/assets/css/admin.css'));}
-},PHP_INT_MAX);
-?>
-<?php
-/** customizer */
-if (!defined('ABSPATH')) exit;
-function feng_customize($manager) {
- $manager->add_section('feng_appearance',array('title'=>'ShanYing · 快速外观','priority'=>30));
- foreach(array('xf_eyebrow','xf_hero_intro') as $key) {
-  foreach(feng_settings_schema() as $group) if(isset($group['fields'][$key])) $field=$group['fields'][$key];
-  $id='feng_settings['.$key.']';
-  $callback=$field[1]==='textarea'?'sanitize_textarea_field':'sanitize_text_field';
-  $manager->add_setting($id,array('type'=>'option','default'=>$field[2],'sanitize_callback'=>$callback));
-  $manager->add_control($id,array('section'=>'feng_appearance','label'=>$field[0],'type'=>$field[1],'choices'=>$field[3]??array()));
- }
-}
-add_action('customize_register','feng_customize');
 ?>
 <?php
 /** category-badge */
@@ -242,40 +195,6 @@ function feng_category_badge($id){
  $attachment=(int)get_term_meta($id,'feng_category_badge',true);$url=$attachment?wp_get_attachment_url($attachment):false;
  return $url?'<img class="feng-category-badge" src="'.esc_url($url).'" width="28" height="28" alt="" decoding="async">':'';
 }
-function feng_category_badge_field($term=null){
- $id=$term instanceof WP_Term?(int)get_term_meta($term->term_id,'feng_category_badge',true):0;
- $code=$term instanceof WP_Term?get_term_meta($term->term_id,'feng_category_icon',true):'';
- wp_nonce_field('feng_category_badge','feng_category_badge_nonce');
- $cover=$term instanceof WP_Term?get_term_meta($term->term_id,'feng_category_cover',true):'';
- echo '<div class="feng-category-cover-field"><p><label for="feng-category-cover">分类固定封面（首页与控制面板）</label></p><div style="display:flex;gap:6px"><input type="url" class="large-text" id="feng-category-cover" name="feng_category_cover" value="'.esc_attr($cover).'" placeholder="图片 URL"><button type="button" class="button" data-category-cover-choose>选择或上传图片</button><button type="button" class="button" data-category-cover-clear>清除</button></div><p class="description">建议 800 × 400px，图片以居中裁切铺满首页分类区块。重要图案与文字请放在中央。</p></div>';
-
- $show_text=!($term instanceof WP_Term)||get_term_meta($term->term_id,'feng_category_hide_text',true)!=='1';
- echo '<p><label><input type="checkbox" name="feng_category_show_text" value="1" '.checked($show_text,true,false).'> 首页分类区块显示图标与名称</label></p><p class="description">图片已经包含分类名称时可关闭；没有图片时仍显示名称。</p>';
-
- echo '<p><label for="feng-category-icon">Font Awesome 类名 / SVG 代码</label></p><textarea id="feng-category-icon" name="feng_category_icon" rows="3" class="large-text code" placeholder="fa-sharp fa-solid fa-house">'.esc_textarea($code).'</textarea><div data-icon-preview style="font-size:28px;min-height:40px;margin:8px 0">'.feng_badge_icon_markup($code).'</div><p class="description">支持 Pro 原始类名、完整 &lt;i&gt; 标签或纯路径 SVG 代码。填写代码时优先显示代码图标；清空后使用下方图片。</p>';
-
- echo '<div data-category-badge><input type="hidden" name="feng_category_badge" value="'.esc_attr($id).'"><div data-badge-preview style="margin:8px 0">'.($id?'<img src="'.esc_url(wp_get_attachment_url($id)).'" width="48" height="48" style="object-fit:contain" alt="分类徽章预览">':'').'</div><button type="button" class="button" data-badge-choose>选择或上传徽章</button> <button type="button" class="button" data-badge-remove>移除</button><p class="description">支持 PNG、WebP、JPG、GIF 和纯路径 SVG。建议使用透明背景的正方形图片；留空时只显示分类名称。</p></div>';
-}
-add_action('category_add_form_fields',function(){echo '<div class="form-field"><label>分类徽章</label>';feng_category_badge_field();echo '</div>';});
-add_action('category_edit_form_fields',function($term){echo '<tr class="form-field"><th scope="row">分类徽章</th><td>';feng_category_badge_field($term);echo '</td></tr>';});
-function feng_save_category_badge($id){
- if(!current_user_can('manage_categories')||empty($_POST['feng_category_badge_nonce'])||!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['feng_category_badge_nonce'])),'feng_category_badge'))return;
- update_term_meta($id,'feng_category_hide_text',isset($_POST['feng_category_show_text'])?'0':'1');
- if(isset($_POST['feng_category_cover'])&&is_string($_POST['feng_category_cover']))update_term_meta($id,'feng_category_cover',esc_url_raw(wp_unslash($_POST['feng_category_cover']),array('http','https')));
- if(isset($_POST['feng_category_icon'])&&is_string($_POST['feng_category_icon'])){$code=feng_badge_icon_code(wp_unslash($_POST['feng_category_icon']));if($code)update_term_meta($id,'feng_category_icon',$code);else delete_term_meta($id,'feng_category_icon');}
- $attachment=isset($_POST['feng_category_badge'])?absint($_POST['feng_category_badge']):0;
- if(!$attachment){delete_term_meta($id,'feng_category_badge');return;}
- if(get_post_type($attachment)!=='attachment'||!in_array(get_post_mime_type($attachment),array('image/png','image/jpeg','image/webp','image/gif','image/svg+xml'),true))return;
- if(get_post_mime_type($attachment)==='image/svg+xml'){$file=get_attached_file($attachment);if(!$file||!is_readable($file)||feng_badge_svg(file_get_contents($file))===false)return;}
- update_term_meta($id,'feng_category_badge',$attachment);
-}
-add_action('created_category','feng_save_category_badge');add_action('edited_category','feng_save_category_badge');
-add_filter('manage_edit-category_columns',function($cols){$cols['feng_badge']='徽章';return $cols;});
-add_filter('manage_category_custom_column',function($content,$column,$id){return $column==='feng_badge'?(feng_category_badge($id)?:'—'):$content;},10,3);
-add_action('admin_enqueue_scripts',function(){
- $screen=get_current_screen();if(!$screen||$screen->taxonomy!=='category')return;
- feng_category_fontawesome();wp_enqueue_media();wp_enqueue_script('feng-category-badge',get_theme_file_uri('/assets/js/category-badge.js'),array('jquery','media-views'),feng_asset_version('/assets/js/category-badge.js'),true);
-});
 add_filter('the_category',function($html){
  foreach(get_the_category()?:array() as $term){$badge=feng_category_badge($term->term_id);if($badge)$html=str_replace('>'.esc_html($term->name).'</a>','>'.$badge.esc_html($term->name).'</a>',$html);}
  return $html;
@@ -287,30 +206,6 @@ function feng_collection_layout($id){
  $layout=get_term_meta($id,'feng_collection_layout',true);
  return in_array($layout,array('1','3','4','tiles','list'),true)?$layout:'list';
 }
-function feng_collection_layout_field($term=null){
- $layout=$term instanceof WP_Term?feng_collection_layout($term->term_id):'list';
- wp_nonce_field('feng_collection_layout','feng_collection_layout_nonce');
- echo '<select id="feng-collection-layout" name="feng_collection_layout">';
- foreach(array('list'=>'文章列表＋右侧封面（默认）','1'=>'单张宽幅卡片','3'=>'三张并排','4'=>'四张并排','tiles'=>'四宫格（两行两列）') as $value=>$label)echo '<option value="'.esc_attr($value).'" '.selected($layout,(string)$value,false).'>'.esc_html($label).'</option>';
- echo '</select>';
- $id=$term instanceof WP_Term?$term->term_id:0;
- echo '<p><label>列表文章数量 <select name="feng_collection_count">';
- foreach(array(3,5) as $n)echo '<option value="'.$n.'" '.selected((int)(get_term_meta($id,'feng_collection_count',true)?:5),$n,false).'>'.$n.' 篇</option>';
- echo '</select></label></p><p><label>卡片底色 <input type="color" name="feng_collection_tint" value="'.esc_attr(get_term_meta($id,'feng_collection_tint',true)?:'#f5f7fa').'"></label></p><p><label><input type="checkbox" name="feng_collection_preview" value="1" '.checked(get_term_meta($id,'feng_collection_preview',true)!=='0',true,false).'> 悬浮文章切换封面</label></p>';
- echo '<p class="description">用于首页此分类的文章展示，每次翻页显示对应数量。请先在“外观 → 菜单”中将此分类加入“首页分类”菜单。手机端自动改为单列。</p>';
-}
-add_action('category_add_form_fields',function(){echo '<div class="form-field"><label for="feng-collection-layout">首页展示样式</label>';feng_collection_layout_field();echo '</div>';});
-add_action('category_edit_form_fields',function($term){echo '<tr class="form-field"><th><label for="feng-collection-layout">首页展示样式</label></th><td>';feng_collection_layout_field($term);echo '</td></tr>';});
-function feng_save_collection_layout($id){
- if(!current_user_can('manage_categories')||empty($_POST['feng_collection_layout_nonce'])||!is_string($_POST['feng_collection_layout_nonce'])||!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['feng_collection_layout_nonce'])),'feng_collection_layout'))return;
- $layout=isset($_POST['feng_collection_layout'])&&is_string($_POST['feng_collection_layout'])?wp_unslash($_POST['feng_collection_layout']):'3';
- update_term_meta($id,'feng_collection_count',isset($_POST['feng_collection_count'])&&$_POST['feng_collection_count']==='3'?3:5);
- update_term_meta($id,'feng_collection_preview',isset($_POST['feng_collection_preview'])?'1':'0');
- if(isset($_POST['feng_collection_tint'])&&is_string($_POST['feng_collection_tint'])){$tint=sanitize_hex_color(wp_unslash($_POST['feng_collection_tint']));if($tint)update_term_meta($id,'feng_collection_tint',$tint);}
- if(in_array($layout,array('1','3','4','tiles','list'),true))update_term_meta($id,'feng_collection_layout',$layout);
-}
-add_action('created_category','feng_save_collection_layout');
-add_action('edited_category','feng_save_collection_layout');
 
 
 require_once get_template_directory() . '/inc/inc-media.php';
@@ -564,12 +459,8 @@ function feng_music_tracks_field($value) {
  $lines=array();foreach(feng_music_sanitize_tracks($value) as $track)$lines[]=implode(' | ',array_map(static function($v){return str_replace('|','%7C',$v);},array($track['title'],$track['artist'],$track['url'],$track['lrc_url'],$track['cover'])));
  echo '<div class="feng-music-links"><p class="description">每行一首，最多 30 首，按行顺序播放。歌名和音乐地址必填；作者、歌词和封面可留空，保留分隔符。</p><p><code>歌名 | 作者 | 音乐地址 | 歌词地址 | 封面地址</code></p><textarea id="feng-music_tracks" class="large-text code" name="feng_settings[music_tracks]" rows="10" spellcheck="false" placeholder="歌名 | 作者 | https://example.com/song.mp3 | https://example.com/song.lrc | https://example.com/cover.webp">'.esc_textarea(implode("\n",$lines)).'</textarea><p class="description">直接填写你自行上传后的文件直链，不是音乐网站的播放页面。歌词支持 UTF-8 LRC 或纯文本，外部歌词服务器需允许跨域读取（CORS）。地址里的竖线请写成 %7C。已有粘贴歌词会保留作备用。</p></div>';
 }
-add_action('wp_enqueue_scripts',function(){
- wp_enqueue_style('feng-music',get_theme_file_uri('/assets/css/music.css'),array('feng-cards'),feng_asset_version('/assets/css/music.css'));
- if(feng_setting('music_enabled',true)) wp_enqueue_script('feng-music',get_theme_file_uri('/assets/js/music.js'),array('xf-app'),feng_asset_version('/assets/js/music.js'),array('strategy'=>'defer','in_footer'=>true));
-});
 add_action('wp_footer',function(){
- if(feng_setting('music_enabled',true)) get_template_part('template-parts/music-player');
+ if(feng_setting('music_enabled',true))get_template_part('template-parts/music-player');
 },5);
 ?>
 <?php
@@ -581,10 +472,6 @@ function feng_activity_query($page=1){
 function feng_activity_rows($query){
  ob_start();foreach($query->posts as $entry)get_template_part('template-parts/activity-item',null,array('post'=>$entry));return ob_get_clean();
 }
-add_action('wp_enqueue_scripts',function(){
- wp_enqueue_style('feng-activity',get_theme_file_uri('/assets/css/activity.css'),array('feng-pages'),feng_asset_version('/assets/css/activity.css'));
- wp_enqueue_script('feng-activity',get_theme_file_uri('/assets/js/activity.js'),array('xf-app'),feng_asset_version('/assets/js/activity.js'),true);
-});
 function feng_activity_ajax(){
  $page=isset($_GET['page'])&&is_scalar($_GET['page'])?max(1,absint($_GET['page'])):1;
  if($page>10000)wp_send_json_error(array('message'=>'页码超出范围。'),400);
@@ -757,15 +644,48 @@ add_action('wp_ajax_feng_hero_activity','feng_hero_activity_ajax');
 add_action('wp_ajax_nopriv_feng_hero_activity','feng_hero_activity_ajax');
 function feng_flush_hero_activity($post_id=0){
  delete_transient('feng_hero_activity_v1');
+ delete_transient('feng_home_comments_v1');
  $post=$post_id?get_post($post_id):null;
  if($post&&in_array($post->post_type,array('post','feng_talk'),true))delete_transient('feng_heatmap_day_v1_'.substr($post->post_date,0,10));
 }
 add_action('save_post',static function($id){if(wp_is_post_revision($id)||wp_is_post_autosave($id))return;feng_flush_hero_activity($id);},20);
 add_action('before_delete_post','feng_flush_hero_activity');
 add_action('trashed_post','feng_flush_hero_activity');
-add_action('comment_post',static function(){delete_transient('feng_hero_activity_v1');});
-add_action('deleted_comment',static function(){delete_transient('feng_hero_activity_v1');});
-add_action('transition_comment_status',static function(){delete_transient('feng_hero_activity_v1');});
+add_action('comment_post',static function(){delete_transient('feng_hero_activity_v1');delete_transient('feng_home_comments_v1');});
+add_action('deleted_comment',static function(){delete_transient('feng_hero_activity_v1');delete_transient('feng_home_comments_v1');});
+add_action('transition_comment_status',static function(){delete_transient('feng_hero_activity_v1');delete_transient('feng_home_comments_v1');});
+
+function feng_home_comment_subject($post){
+ if(!$post)return '';
+ if($post->post_type==='feng_talk'){
+  $text=wp_trim_words(wp_strip_all_tags($post->post_content),14,'…');
+  return $text!==''?$text:'一条说说';
+ }
+ $title=trim(wp_strip_all_tags(get_the_title($post)));
+ return $title!==''?$title:'未命名';
+}
+function feng_home_comment_capsules(){
+ $key='feng_home_comments_v1';
+ $cached=get_transient($key);
+ if(is_string($cached))return $cached;
+ $comments=get_comments(array('status'=>'approve','type'=>'comment','number'=>60,'orderby'=>'comment_date_gmt','order'=>'DESC'));
+ $html='';$count=0;
+ foreach($comments as $comment){
+  if((int)$comment->user_id && user_can((int)$comment->user_id,'manage_options'))continue;
+  $post=get_post((int)$comment->comment_post_ID);
+  if(!$post||$post->post_status!=='publish'||$post->post_password!==''||!is_post_publicly_viewable($post))continue;
+  $excerpt=wp_trim_words(wp_strip_all_tags($comment->comment_content),18,'…');
+  if($excerpt==='')continue;
+  $author=get_comment_author($comment);
+  $html.='<a class="feng-home-comment" href="'.esc_url(get_comment_link($comment)).'">';
+  $html.=get_avatar($comment,40,'',$author,array('loading'=>'lazy','decoding'=>'async'));
+  $html.='<span class="feng-home-comment__body"><b>'.esc_html($author).'</b><span>'.esc_html($excerpt).'</span><small>评了《'.esc_html(feng_home_comment_subject($post)).'》</small></span></a>';
+  $count++;
+  if($count>=16)break;
+ }
+ set_transient($key,$html,HOUR_IN_SECONDS);
+ return $html;
+}
 
 
 require_once get_template_directory() . '/inc/inc-talk.php';
@@ -916,12 +836,6 @@ add_action('save_post_post',static function($id) {
  if(!isset($_POST['feng_summary_nonce']) || !is_string($_POST['feng_summary_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['feng_summary_nonce'])),'feng_summary'))return;
  if(isset($_POST['feng_ai_summary_saved']) && is_string($_POST['feng_ai_summary_saved'])) update_post_meta($id,'_feng_ai_summary',feng_sanitize_reading_summary(wp_unslash($_POST['feng_ai_summary_saved'])));
 });
-add_action('wp_enqueue_scripts',static function() {
- // Global dependencies keep PJAX transitions into articles compatible.
- wp_enqueue_style('feng-reading',get_theme_file_uri('/assets/css/reading.css'),array('feng-article'),feng_asset_version('/assets/css/reading.css'));
- wp_enqueue_script('feng-reading',get_theme_file_uri('/assets/js/reading.js'),array('xf-app'),feng_asset_version('/assets/js/reading.js'),array('strategy'=>'defer','in_footer'=>true));
-});
-
 function feng_reading_related($post_id,$mode='category') {
  $query=array('post_type'=>'post','post_status'=>'publish','has_password'=>false,'post__not_in'=>array($post_id),'posts_per_page'=>30,'no_found_rows'=>true,'ignore_sticky_posts'=>true,'orderby'=>array('date'=>'DESC','ID'=>'DESC'));
  if($mode==='related'){$tags=wp_get_post_tags($post_id,array('fields'=>'ids'));if(!$tags)return new WP_Query(array('post__in'=>array(0)));$query['tag__in']=$tags;}
@@ -929,8 +843,6 @@ function feng_reading_related($post_id,$mode='category') {
  else $query['orderby']='rand';
  return new WP_Query($query);
 }
-
-add_action('wp_enqueue_scripts',function(){wp_enqueue_script('feng-related',get_theme_file_uri('/assets/js/related.js'),array('xf-app'),feng_asset_version('/assets/js/related.js'),true);});
 
 function feng_article_freshness($post,$now=null){
  $post=get_post($post);$threshold=(int)feng_setting('article_stale_days','365');
@@ -953,7 +865,6 @@ function feng_reading_escape_code_examples($content){
 }
 add_filter('the_content','feng_reading_escape_code_examples',8);
 
-
 /* ===== 交互辅助 ===== */
 /** home-profile */
 if(!defined('ABSPATH'))exit;
@@ -962,19 +873,10 @@ function feng_hero_music_options(){
  foreach(feng_music_sanitize_tracks(feng_setting('music_tracks',array())) as $track)$options[$track['url']]=$track['title'];
  return $options;
 }
-add_action('wp_enqueue_scripts',function(){
- wp_enqueue_style('feng-category-font',get_theme_file_uri('/assets/fonts/category/font.css'),array(),feng_asset_version('/assets/fonts/category/font.css'));
- wp_enqueue_style('feng-home-profile',get_theme_file_uri('/assets/css/home-profile.css'),array('feng-pages'),feng_asset_version('/assets/css/home-profile.css'));
- wp_enqueue_script('feng-home-profile',get_theme_file_uri('/assets/js/home-profile.js'),array('xf-app'),feng_asset_version('/assets/js/home-profile.js'),true);
-});
 ?>
 <?php
 /** context-menu */
 if(!defined('ABSPATH'))exit;
-add_action('wp_enqueue_scripts',function(){
- wp_enqueue_style('feng-context',get_theme_file_uri('/assets/css/context-menu.css'),array('feng-pages'),feng_asset_version('/assets/css/context-menu.css'));
- wp_enqueue_script('feng-context',get_theme_file_uri('/assets/js/context-menu.js'),array('xf-app'),feng_asset_version('/assets/js/context-menu.js'),true);
-});
 add_action('wp_footer',function(){ ?>
 <div class="feng-page-menu" data-page-menu role="menu" aria-label="页面快捷操作" hidden>
 <div class="feng-page-menu-nav"><?php foreach(array('back'=>array('arrow-left','后退'),'forward'=>array('arrow-right','前进'),'reload'=>array('refresh','重新加载'),'top'=>array('arrow-up','回到顶部')) as $key=>$v): ?><button role="menuitem" type="button" data-page-tool="<?php echo esc_attr($key); ?>" aria-label="<?php echo esc_attr($v[1]); ?>"><?php echo feng_icon($v[0]); ?></button><?php endforeach; ?></div>
@@ -988,11 +890,6 @@ require_once get_template_directory() . '/inc/inc-travel.php';
 /* ===== 站点辅助服务 ===== */
 /** jieqi */
 if(!defined('ABSPATH'))exit;
-add_action('wp_enqueue_scripts',function(){
- if(!feng_setting('jieqi_enabled',true))return;
- wp_enqueue_script('feng-jieqi',get_theme_file_uri('/assets/js/jieqi.js'),array(),feng_asset_version('/assets/js/jieqi.js'),true);
- wp_enqueue_style('feng-jieqi',get_theme_file_uri('/assets/css/jieqi.css'),array(),feng_asset_version('/assets/css/jieqi.css'));
-});
 function feng_jieqi_toggle(){
  if(!feng_setting('jieqi_enabled',true))return;
  echo '<button type="button" class="feng-jieqi-toggle" data-jieqi-toggle aria-pressed="true" title="关闭节气与节假日提醒">节气提醒<span data-jieqi-state>已开启</span></button>';
@@ -1013,28 +910,6 @@ add_action('phpmailer_init',function($mail){
  if(!$c['host']||!is_email($c['from_email'])||($c['auth']&&(!$c['username']||!$password)))throw new \PHPMailer\PHPMailer\Exception('SMTP 配置不完整，请检查主题邮件设置。');
  $mail->isSMTP();$mail->Host=$c['host'];$mail->Port=(int)$c['port'];$mail->SMTPSecure=$c['encryption'];$mail->SMTPAutoTLS=$c['encryption']!=='';$mail->SMTPAuth=(bool)$c['auth'];$mail->Username=$c['username'];$mail->Password=$password;$mail->Timeout=15;$mail->SMTPDebug=0;$mail->setFrom($c['from_email'],$c['from_name'],false);
 });
-function feng_mail_settings_screen(){
- if(!current_user_can('manage_options'))return;$notice='';$error=false;
- if($_SERVER['REQUEST_METHOD']==='POST'&&check_admin_referer('feng_mail_settings')){
-  if(isset($_POST['mail_test'])){
-   $recipient=sanitize_email(wp_unslash($_POST['test_email']??''));
-   if(!feng_mail_config()['enabled']||!is_email($recipient)){$notice='请先保存并启用 SMTP，再填写有效的测试收件邮箱。';$error=true;}
-   else{$ok=wp_mail($recipient,'SMTP 测试邮件 · '.get_bloginfo('name'),'这是一封由站点管理员主动发送的测试邮件。收到此邮件说明当前邮件配置能够送达。');$notice=$ok?'邮件服务器已接受测试邮件，请检查收件箱和垃圾邮件。':'测试发送失败，请检查服务器地址、端口、加密方式、账号和授权码。';$error=!$ok;}
-  }else{
-   $old=feng_mail_config();$v=isset($_POST['feng_mail'])&&is_array($_POST['feng_mail'])?wp_unslash($_POST['feng_mail']):array();foreach($v as $k=>$value)if(!is_scalar($value))$v[$k]='';
-   $next=array('enabled'=>!empty($v['enabled']),'host'=>strtolower(trim(sanitize_text_field($v['host']??''))),'port'=>absint($v['port']??587),'encryption'=>in_array($v['encryption']??'',array('tls','ssl',''),true)?$v['encryption']:'tls','auth'=>!empty($v['auth']),'username'=>sanitize_text_field($v['username']??''),'password'=>$old['password'],'from_email'=>sanitize_email($v['from_email']??''),'from_name'=>sanitize_text_field($v['from_name']??''));
-   if($next['host']!==$old['host']||$next['username']!==$old['username']||!empty($v['clear_password']))$next['password']='';
-   if(($v['password']??'')!=='')$next['password']=feng_mail_secret($v['password']);
-   if(($next['host']!==''&&!preg_match('/^[a-z0-9.-]+$/D',$next['host']))||$next['port']<1||$next['port']>65535){$notice='服务器只填写主机名或 IPv4 地址，端口范围为 1–65535。';$error=true;}
-   elseif($next['enabled']&&(!$next['host']||!$next['from_email']||($next['auth']&&(!$next['username']||!$next['password'])))){$notice='启用前请填写服务器、发件邮箱及认证信息；修改服务器或账号时请重新填写密码。';$error=true;}
-   else{update_option('feng_mail_settings',$next,false);$notice='邮件设置已保存。';}
-  }
- }
- $c=feng_mail_config();echo '<div class="wrap feng-admin">';feng_settings_header();if($notice)echo '<div class="notice notice-'.($error?'error':'success').'"><p>'.esc_html($notice).'</p></div>';echo '<div class="feng-admin-shell">';feng_settings_tabs('mail');echo '<div class="feng-admin-content"><section class="feng-settings-section"><header class="feng-section-header"><h2>邮件发送 · SMTP</h2><p>用于 WordPress 的通知、找回密码和其他 wp_mail 邮件。请填写邮件服务商提供的配置。</p></header><form method="post" class="feng-settings-form">';wp_nonce_field('feng_mail_settings');
- echo '<table class="form-table"><tr><th>启用 SMTP</th><td><label><input type="checkbox" name="feng_mail[enabled]" value="1" '.checked($c['enabled'],true,false).'>启用</label></td></tr>';
- foreach(array('host'=>'SMTP 服务器','port'=>'端口','username'=>'账号','from_email'=>'发件邮箱','from_name'=>'发件人名称') as $key=>$label){echo '<tr><th><label for="mail-'.$key.'">'.$label.'</label></th><td><input class="regular-text" id="mail-'.$key.'" name="feng_mail['.$key.']" type="'.($key==='port'?'number':($key==='from_email'?'email':'text')).'" value="'.esc_attr($c[$key]).'" '.($key==='port'?'min="1" max="65535"':'').'></td></tr>';}
- echo '<tr><th>连接加密</th><td><select name="feng_mail[encryption]">';foreach(array('tls'=>'STARTTLS（通常 587）','ssl'=>'SSL / TLS（通常 465）',''=>'无加密（仅用于可信内网）') as $key=>$label)echo '<option value="'.esc_attr($key).'" '.selected($c['encryption'],$key,false).'>'.$label.'</option>';echo '</select></td></tr><tr><th>SMTP 认证</th><td><label><input type="checkbox" name="feng_mail[auth]" value="1" '.checked($c['auth'],true,false).'>使用账号密码认证</label></td></tr><tr><th><label for="mail-password">密码 / 授权码</label></th><td><input id="mail-password" class="regular-text" type="password" autocomplete="new-password" name="feng_mail[password]" value="" placeholder="'.($c['password']?'已保存，留空保留':'尚未配置').'"><p><label><input type="checkbox" name="feng_mail[clear_password]" value="1">清除已保存密码</label></p><p class="description">密码加密保存，不在页面回显。邮箱要求授权码时请勿填写登录密码。更换服务器或账号后需重新填写。</p></td></tr></table>';submit_button('保存邮件设置');echo '</form></section><section class="feng-settings-section"><h2>发送测试邮件</h2><p>使用已保存的配置，仅在点击下方按钮后发送。</p><form method="post">';wp_nonce_field('feng_mail_settings');echo '<label for="mail-test-email">收件邮箱</label> <input id="mail-test-email" class="regular-text" name="test_email" type="email" required>';submit_button('发送测试邮件','secondary','mail_test');echo '</form></section></div></div></div>';
-}
 ?>
 <?php
 /** optimization */
@@ -1053,12 +928,6 @@ function feng_schedule_category_flush(){add_action('shutdown',function(){flush_r
 add_action('update_option_feng_settings',function($old,$new){if(!empty($old['remove_category_base'])!==!empty($new['remove_category_base']))feng_schedule_category_flush();},10,2);
 foreach(array('created_category','edited_category','delete_category') as $hook)add_action($hook,'feng_schedule_category_flush');
 add_action('template_redirect',function(){if(!is_category()||!feng_setting('remove_category_base',false))return;$url=get_category_link(get_queried_object_id());$path=wp_parse_url($url,PHP_URL_PATH);$requested=wp_parse_url(wp_unslash($_SERVER['REQUEST_URI']??''),PHP_URL_PATH);if(!get_query_var('paged')&&!is_feed()&&$requested&&untrailingslashit($path)!==untrailingslashit($requested)){wp_safe_redirect($url,301);exit;}});
-function feng_database_cleanup_form(){
- if(!current_user_can('manage_options'))return;
- echo '<details class="feng-settings-section"><summary>数据库维护</summary><p>仅清理已过期的 WordPress 临时缓存，不删除文章、评论、友情链接或修订版本。</p><form method="post" action="'.esc_url(admin_url('admin-post.php')).'">';wp_nonce_field('feng_expired_cache');echo '<input type="hidden" name="action" value="feng_expired_cache">';submit_button('清理过期缓存','secondary');echo '</form></details>';
-}
-add_action('admin_post_feng_expired_cache',function(){if(!current_user_can('manage_options'))wp_die('没有权限');check_admin_referer('feng_expired_cache');delete_expired_transients(true);wp_safe_redirect(admin_url('themes.php?page=feng-settings&cache_cleaned=1'));exit;});
-add_action('admin_notices',function(){if(current_user_can('manage_options')&&($_GET['page']??'')==='feng-settings'&&isset($_GET['cache_cleaned']))echo '<div class="notice notice-success"><p>过期缓存已清理。</p></div>';});
 ?>
 <?php
 /** site-extras */
@@ -1091,7 +960,6 @@ function feng_upload_webp($upload){
  $upload['file']=$result['path'];$upload['url']=trailingslashit(dirname($upload['url'])).rawurlencode(basename($result['path']));$upload['type']='image/webp';wp_delete_file($file);return $upload;
 }
 add_filter('wp_handle_upload','feng_upload_webp');add_filter('wp_handle_sideload','feng_upload_webp');
-add_action('wp_enqueue_scripts',function(){wp_enqueue_style('feng-site-extras',get_theme_file_uri('/assets/css/site-extras.css'),array(),feng_asset_version('/assets/css/site-extras.css'));if(feng_setting('images_fade',true))wp_enqueue_script('feng-image-fade',get_theme_file_uri('/assets/js/image-fade.js'),array('xf-app'),feng_asset_version('/assets/js/image-fade.js'),true);});
 
 /** Public article totals. Chinese characters count individually, Latin words as words. */
 function feng_footer_content_stats(){
@@ -1115,9 +983,6 @@ add_action('deleted_post',function(){delete_transient('polar_footer_content_tota
 <?php
 /** greeting */
 if(!defined('ABSPATH'))exit;
-add_action('wp_enqueue_scripts',function(){
- wp_enqueue_script('feng-greeting',get_theme_file_uri('/assets/js/greeting.js'),array('xf-app'),feng_asset_version('/assets/js/greeting.js'),true);
-});
 function feng_greeting_identity(){
  nocache_headers();
  $user=wp_get_current_user();$commenter=wp_get_current_commenter();
@@ -1172,7 +1037,6 @@ function feng_visitor_stats_ping(){
  wp_send_json_success(array('online'=>$online,'views'=>$total,'location'=>$location?:null));
 }
 add_action('wp_ajax_feng_visitor_stats','feng_visitor_stats_ping');add_action('wp_ajax_nopriv_feng_visitor_stats','feng_visitor_stats_ping');
-add_action('wp_enqueue_scripts',function(){if(feng_setting('footer_stats',true))wp_enqueue_script('feng-visitor-stats',get_theme_file_uri('/assets/js/visitor-stats.js'),array('xf-app'),feng_asset_version('/assets/js/visitor-stats.js'),true);});
 ?>
 <?php
 /** activity-calendar */
@@ -1302,3 +1166,18 @@ function feng_get_post_id_by_display_id($display_id) {
         (string) $display_id
     ));
 }
+
+/** Article permalinks use /post/, but tags stay at the native /tag/ base. */
+add_filter('register_taxonomy_args', static function($args, $taxonomy) {
+    if ($taxonomy !== 'post_tag' || empty($args['rewrite']) || !is_array($args['rewrite'])) return $args;
+    $args['rewrite']['with_front'] = false;
+    $args['rewrite']['slug'] = get_option('tag_base') ?: 'tag';
+    return $args;
+}, 10, 2);
+add_action('init', static function() {
+    if (!get_option('permalink_structure')) return;
+    if (get_option('tag_base') === '') update_option('tag_base', 'tag');
+    if (get_option('feng_tag_rewrite') === 'tag-no-front-v1') return;
+    update_option('feng_tag_rewrite', 'tag-no-front-v1', false);
+    flush_rewrite_rules(false);
+}, 20);

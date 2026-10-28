@@ -2,7 +2,6 @@
 (() => {
  'use strict';
  let active = null;
- let savedY = 0;
  let loading = null;
  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
  const button = () => document.querySelector('[data-feng-dashboard-toggle]');
@@ -17,13 +16,11 @@
   if (!active) return;
   loading?.abort(); loading = null;
   active.hidden = true;
-  document.querySelector('#xf-content')?.removeAttribute('hidden');
-  document.querySelector('.xf-footer')?.removeAttribute('hidden');
+  document.body.classList.remove('feng-dashboard-open');
+  document.body.style.removeProperty('overflow');
   setButtonState(false);
   active = null;
   document.querySelector('.xf-skip-link')?.setAttribute('href','#xf-content');
-  // Restore the real article's position before navigation saves history state.
-  scrollTo({top:savedY, behavior:'instant'});
   if (restore) button()?.focus({preventScroll:true});
  }
  async function load(part = '', month = '') {
@@ -61,23 +58,21 @@
  function open() {
   const panel = document.querySelector('#feng-dashboard');
   if (!panel) return;
-  savedY = scrollY;
   active = panel;
   document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
-  document.querySelector('#xf-content')?.setAttribute('hidden','');
-  document.querySelector('.xf-footer')?.setAttribute('hidden','');
+  document.body.classList.add('feng-dashboard-open');
+  document.body.style.overflow = 'hidden';
   panel.hidden = false;
   document.querySelector('.xf-skip-link')?.setAttribute('href','#feng-dashboard-title');
   setButtonState(true);
-  scrollTo({top:0, behavior:'instant'});
-  panel.querySelector('h1')?.focus({preventScroll:true});
-  if (!reduced.matches) panel.animate([{opacity:0,transform:'translateY(12px) scale(.985)'},{opacity:1,transform:'none'}],{duration:300,easing:'cubic-bezier(.2,.8,.2,1)'});
+  panel.querySelector('[data-feng-dashboard-close]')?.focus({preventScroll:true});
+  if (!reduced.matches) panel.animate([{opacity:0},{opacity:1}],{duration:280,easing:'ease'});
   load();
  }
  document.addEventListener('click', event => {
   if (!(event.target instanceof Element)) return;
+  if (event.target.closest('[data-feng-dashboard-close]')) { close(); return; }
   if (event.target.closest('[data-feng-dashboard-toggle]')) { active ? close() : open(); return; }
-  if (active && !active.contains(event.target) && !event.target.closest('a,button,input,textarea,select,[contenteditable],dialog,[role=menu],[data-feng-pet],[data-feng-music],.xf-header')) { close(); return; }
   if (event.target.closest('[data-feng-dashboard-retry]')) { load(); return; }
   const tab=event.target.closest('[data-dashboard-page]');
   if(tab&&active){active.querySelectorAll('[data-dashboard-page]').forEach(b=>b.setAttribute('aria-pressed',String(b===tab)));active.querySelectorAll('[data-dashboard-view]').forEach(v=>v.hidden=v.dataset.dashboardView!==tab.dataset.dashboardPage);return;}

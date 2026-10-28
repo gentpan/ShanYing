@@ -113,12 +113,6 @@ add_filter('the_content',function($html){
   return $tag->get_updated_html().'<noscript>'.$match[0].'</noscript>';
  },$html);
 },99);
-add_action('wp_enqueue_scripts',function(){
- if(!is_singular())return;
- wp_enqueue_script('feng-litezoom','https://litezoom.dev/litezoom.min.js',array(),null,array('strategy'=>'defer','in_footer'=>true));
- wp_enqueue_script('feng-highlight',get_theme_file_uri('/assets/vendor/highlight/highlight.min.js'),array(), '11.11.1',array('strategy'=>'defer','in_footer'=>true));
- wp_enqueue_script('feng-article-media',get_theme_file_uri('/assets/js/article-media.js'),array('xf-app','feng-litezoom','feng-highlight'),feng_asset_version('/assets/js/article-media.js'),array('strategy'=>'defer','in_footer'=>true));
-});
 ?>
 <?php
 /** icons */

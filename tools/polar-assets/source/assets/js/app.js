@@ -19,6 +19,10 @@
   let manualTheme=false;
   try{manualTheme=localStorage.getItem('xf-theme-manual')==='1'&&['light','dark'].includes(storedTheme);}catch{}
   if(manualTheme)themePreference=storedTheme;
+  const initialHour=new Date().getHours();
+  const initialNight=(initialHour<6||initialHour>=18)&&!manualTheme;
+  const initialDark=themePreference==='dark'||(themePreference!=='light'&&dark.matches);
+  root.setAttribute('data-xf-theme',initialNight||initialDark?'dark':'light');
   let visitorWeather=null;
   try{const cached=JSON.parse(localStorage.getItem('polar-visitor-weather')||sessionStorage.getItem('polar-visitor-weather'));if(cached&&Date.now()-cached.at<3600000)visitorWeather=cached.weather;}catch{}
   function isVisitorNight(){
@@ -632,15 +636,77 @@
     root.dir = doc.documentElement.dir;
     document.body.className = doc.body.className;
   }
+  function adoptHeader(liveHeader, incomingHeader) {
+    liveHeader.className = incomingHeader.className;
+    const liveMenu = liveHeader.querySelector('.xf-nav .xf-menu');
+    const nextMenu = incomingHeader.querySelector('.xf-nav .xf-menu');
+    if (liveMenu && nextMenu) liveMenu.replaceWith(nextMenu);
+    else {
+      const liveNav = liveHeader.querySelector('.xf-nav');
+      const nextNav = incomingHeader.querySelector('.xf-nav');
+      if (liveNav && nextNav) liveNav.replaceChildren(...nextNav.childNodes);
+    }
+    const liveRandom = liveHeader.querySelector('[data-feng-random]');
+    const nextRandom = incomingHeader.querySelector('[data-feng-random]');
+    if (liveRandom && nextRandom) {
+      liveRandom.dataset.exclude = nextRandom.dataset.exclude || '0';
+      liveRandom.setAttribute('href', nextRandom.getAttribute('href'));
+    }
+    incomingHeader.remove();
+  }
+  function commitShell(view, doc) {
+    const live = document.querySelector('#xf-view');
+    const liveHeader = live.querySelector(':scope > .xf-header');
+    const incomingHeader = view.querySelector(':scope > .xf-header');
+    syncMetadata(doc);
+    live.className = view.className;
+    if (liveHeader && incomingHeader) adoptHeader(liveHeader, incomingHeader);
+    const nextMain = view.querySelector('#xf-content');
+    const liveMain = live.querySelector('#xf-content');
+    if (liveMain && nextMain) liveMain.replaceWith(nextMain);
+    else if (nextMain) liveHeader ? liveHeader.after(nextMain) : live.prepend(nextMain);
+    const nextFooter = view.querySelector(':scope > .xf-footer');
+    const liveFooter = live.querySelector(':scope > .xf-footer');
+    if (liveFooter && nextFooter) liveFooter.replaceWith(nextFooter);
+    else if (nextFooter) live.append(nextFooter);
+    else liveFooter?.remove();
+    return live;
+  }
+  function releaseNavSwap() {
+    requestAnimationFrame(() => requestAnimationFrame(() => root.removeAttribute('data-xf-nav-swap')));
+  }
+  function usesViewTransition() {
+    return !reduced.matches && typeof document.startViewTransition === 'function';
+  }
+  async function withPageTransition(update) {
+    let ran = false;
+    const once = () => { if (ran) return; ran = true; update(); };
+    if (usesViewTransition()) {
+      try {
+        const transition = document.startViewTransition(once);
+        try { await transition.finished; } catch { /* skipped or aborted still leaves the committed DOM */ }
+        if (ran) return;
+      } catch { /* fall through to a CSS crossfade when View Transitions cannot start */ }
+    }
+    if (ran) return;
+    const content = document.querySelector('#xf-content');
+    if (!reduced.matches && content?.animate) {
+      try {
+        await content.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease', fill: 'forwards' }).finished;
+      } catch { /* a newer navigation cancelled this outgoing fade */ }
+    }
+    once();
+  }
   async function navigate(target, { pop = false, position = null } = {}) {
     window.fengDashboard?.close(false);
+    setHeaderSearch(false);
     request?.abort();
     const id = ++navigationId;
     const controller = new AbortController(); request = controller;
     const timeout = setTimeout(() => controller.abort('timeout'), 10000);
+    const loadingTimer = setTimeout(() => progress?.setAttribute('data-xf-loading', ''), 180);
     let styles;
     savePosition();
-    progress?.setAttribute('data-xf-loading', '');
     document.querySelector('#xf-content')?.setAttribute('aria-busy', 'true');
     announce('正在加载页面');
     document.querySelectorAll('dialog[open]').forEach(d => d.close());
@@ -651,36 +717,35 @@
       if (!compatible(doc)) throw new Error('Page runtime differs');
       styles = await prepareStyles(doc, controller.signal);
       if (controller.signal.aborted || id !== navigationId) { styles.cancel(); return; }
-      const view = document.importNode(doc.querySelector('#xf-view'), true);
+      const incoming = document.importNode(doc.querySelector('#xf-view'), true);
       // DOMParser parses noscript as markup; strip its fallback before insertion so it cannot fetch media.
-      view.querySelectorAll('noscript').forEach(fallback => fallback.remove());
-      const persistentHeader=document.querySelector('#xf-view > .xf-header');
-      const incomingHeader=view.querySelector('.xf-header');
-      pageCleanup();
-      // Keep the animated shell alive across navigation; refresh page-specific menu contents.
-      if(persistentHeader && incomingHeader){
-        persistentHeader.className=incomingHeader.className;
-        persistentHeader.replaceChildren(...incomingHeader.childNodes);
-        incomingHeader.replaceWith(persistentHeader);
-      }
-      document.querySelector('#xf-view').replaceWith(view);
-      styles.commit();
-      syncMetadata(doc);
-      const finalURL = new URL(response.url); finalURL.hash = new URL(target, location.href).hash;
-      if (!pop) history.pushState({ xf: true, x: 0, y: 0 }, '', finalURL.href);
-      committedURL = location.href;
-      pageCleanup = mount(view);
-      view.querySelector('#xf-content')?.classList.add('xf-view-enter');
-      const main = view.querySelector('#xf-content'); main?.focus({ preventScroll: true });
-      const hash = new URL(location.href).hash;
-      let anchor = null;
-      try { anchor = hash ? document.getElementById(decodeURIComponent(hash.slice(1))) : null; } catch { /* malformed anchor stays at top */ }
-      if (pop && position) scrollTo(position.x || 0, position.y || 0);
-      else if (anchor) anchor.scrollIntoView();
-      else scrollTo(0, 0);
-      syncScrollChrome();
-      savePosition();
-      announce(`已打开：${doc.title}`);
+      incoming.querySelectorAll('noscript').forEach(fallback => fallback.remove());
+      clearTimeout(loadingTimer);
+      progress?.removeAttribute('data-xf-loading');
+      await withPageTransition(() => {
+        if (id !== navigationId) { styles.cancel(); return; }
+        pageCleanup();
+        styles.commit();
+        root.setAttribute('data-xf-nav-swap', '');
+        const restoreY = pop && position ? (position.y || 0) : 0;
+        root.toggleAttribute('data-xf-scrolled', restoreY > 72);
+        const view = commitShell(incoming, doc);
+        const finalURL = new URL(response.url); finalURL.hash = new URL(target, location.href).hash;
+        if (!pop) history.pushState({ xf: true, x: 0, y: 0 }, '', finalURL.href);
+        committedURL = location.href;
+        pageCleanup = mount(view);
+        if (!usesViewTransition()) view.querySelector('#xf-content')?.classList.add('xf-view-enter');
+        view.querySelector('#xf-content')?.focus({ preventScroll: true });
+        const hash = new URL(location.href).hash;
+        let anchor = null;
+        try { anchor = hash ? document.getElementById(decodeURIComponent(hash.slice(1))) : null; } catch { /* malformed anchor stays at top */ }
+        if (pop && position) scrollTo(position.x || 0, position.y || 0);
+        else if (anchor) anchor.scrollIntoView();
+        else { root.removeAttribute('data-xf-scrolled'); scrollTo(0, 0); }
+        syncScrollChrome();
+        savePosition();
+        announce(`已打开：${doc.title}`);
+      });
       await loadPageScripts(doc);
     } catch (error) {
       styles?.cancel();
@@ -691,6 +756,8 @@
       if (pop) location.replace(target); else location.assign(target);
     } finally {
       clearTimeout(timeout);
+      clearTimeout(loadingTimer);
+      releaseNavSwap();
       if (id === navigationId) {
         progress?.removeAttribute('data-xf-loading');
         document.querySelector('#xf-content')?.removeAttribute('aria-busy');

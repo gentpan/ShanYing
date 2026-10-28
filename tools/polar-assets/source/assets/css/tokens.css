@@ -1,29 +1,104 @@
 :root {
-  --xf-bg: #fafafa; --xf-text: #202126; --xf-muted: #757782;
-  --xf-surface: #ffffff; --xf-glass: #ffffff; --xf-line: rgb(25 28 40 / .1);
-  --xf-accent: #0052D9; --xf-accent-text: #ffffff; --xf-focus: #0052D9;
-  --xf-soft: #f1f2f5; --xf-width: 1200px; --xf-reading: 760px;
-  --xf-radius: 28px; --xf-radius-small: 16px;
-  --feng-radius-panel: 36px; --feng-radius-card: 28px; --feng-radius-row: 24px; --feng-radius-thumb: 12px;
+  /* Primitive palette: change these values to retune the whole theme. */
+  --feng-color-white: #ffffff;
+  --feng-color-neutral-50: #fafafa;
+  --feng-color-neutral-100: #f1f2f5;
+  --feng-color-neutral-700: #757782;
+  --feng-color-neutral-800: #202126;
+  --feng-color-neutral-850: #242424;
+  --feng-color-neutral-900: #191919;
+  --feng-color-neutral-925: #0a0a0a;
+  --feng-color-neutral-100-dark: #eeeeee;
+  --feng-color-neutral-400-dark: #a3a3a3;
+  --feng-color-blue-600: #0052d9;
+  --feng-color-lime-400: #90ff3a;
+
+  /* Spacing, shape and typography. */
+  --feng-space-1: 4px;
+  --feng-space-2: 8px;
+  --feng-space-3: 12px;
+  --feng-space-4: 16px;
+  --feng-space-5: 20px;
+  --feng-space-6: 24px;
+  --feng-space-8: 32px;
+  --feng-space-10: 40px;
+  --feng-radius-xs: 6px;
+  --feng-radius-sm: 12px;
+  --feng-radius-md: 16px;
+  --feng-radius-lg: 24px;
+  --feng-radius-xl: 28px;
+  --feng-radius-panel: 36px;
+  --feng-radius-card: var(--feng-radius-xl);
+  --feng-radius-row: var(--feng-radius-lg);
+  --feng-radius-thumb: var(--feng-radius-sm);
   --xf-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+
+  /* Semantic tokens: components consume these, not raw palette values. */
+  --xf-bg: var(--feng-color-neutral-50);
+  --xf-text: var(--feng-color-neutral-800);
+  --xf-muted: var(--feng-color-neutral-700);
+  --xf-surface: var(--feng-color-white);
+  --xf-glass: var(--xf-surface);
+  --xf-line: rgb(25 28 40 / .1);
+  --xf-accent: var(--feng-color-blue-600);
+  --xf-accent-text: var(--feng-color-white);
+  --xf-focus: var(--xf-accent);
+  --xf-soft: var(--feng-color-neutral-100);
+  --xf-width: 1200px;
+  --xf-reading: 760px;
+  --xf-radius: var(--feng-radius-xl);
+  --xf-radius-small: var(--feng-radius-md);
   --xf-shadow: 0 18px 55px rgb(20 24 40 / .065);
-  --xf-ease: cubic-bezier(.2,.75,.25,1); --xf-duration: 700ms; --feng-motion-enter: 850ms; --feng-motion-reveal: 1000ms; --feng-motion-gentle: cubic-bezier(.4,0,.25,1);
+  --xf-ease: cubic-bezier(.2, .75, .25, 1);
+  --xf-duration: 700ms;
+  --feng-motion-enter: 850ms;
+  --feng-motion-reveal: 1000ms;
+  --feng-motion-gentle: cubic-bezier(.4, 0, .25, 1);
+
+  /* Component tokens. */
+  --feng-button-bg: var(--xf-text);
+  --feng-button-text: var(--xf-bg);
+  --feng-button-radius: var(--feng-radius-sm);
+  --feng-field-bg: var(--xf-surface);
+  --feng-field-border: var(--xf-line);
+  --feng-card-bg: var(--xf-glass);
+  --feng-card-border: var(--xf-line);
+  --feng-card-radius: var(--xf-radius);
   color-scheme: light;
 }
+
 :root[data-xf-theme="dark"] {
-  --xf-bg: #0a0a0a; --xf-text: #eeeeee; --xf-muted: #a3a3a3;
-  --xf-surface: #191919; --xf-glass: #191919; --xf-line: rgb(255 255 255 / .09);
-  --xf-soft: #242424; --xf-accent: #90FF3A; --xf-accent-text: #0a0a0a; --xf-focus: #90FF3A; --xf-shadow: 0 18px 55px rgb(0 0 0 / .12);
+  --xf-bg: var(--feng-color-neutral-925);
+  --xf-text: var(--feng-color-neutral-100-dark);
+  --xf-muted: var(--feng-color-neutral-400-dark);
+  --xf-surface: var(--feng-color-neutral-900);
+  --xf-line: rgb(255 255 255 / .09);
+  --xf-soft: var(--feng-color-neutral-850);
+  --xf-accent: var(--feng-color-lime-400);
+  --xf-accent-text: var(--feng-color-neutral-925);
+  --xf-shadow: 0 18px 55px rgb(0 0 0 / .12);
   color-scheme: dark;
 }
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-xf-theme="light"]) {
-    --xf-bg: #0a0a0a; --xf-text: #eeeeee; --xf-muted: #a3a3a3;
-    --xf-surface: #191919; --xf-glass: #191919; --xf-line: rgb(255 255 255 / .09);
-    --xf-soft: #242424; --xf-accent: #90FF3A; --xf-accent-text: #0a0a0a; --xf-focus: #90FF3A; --xf-shadow: 0 18px 55px rgb(0 0 0 / .12);
+    --xf-bg: var(--feng-color-neutral-925);
+    --xf-text: var(--feng-color-neutral-100-dark);
+    --xf-muted: var(--feng-color-neutral-400-dark);
+    --xf-surface: var(--feng-color-neutral-900);
+    --xf-line: rgb(255 255 255 / .09);
+    --xf-soft: var(--feng-color-neutral-850);
+    --xf-accent: var(--feng-color-lime-400);
+    --xf-accent-text: var(--feng-color-neutral-925);
+    --xf-shadow: 0 18px 55px rgb(0 0 0 / .12);
     color-scheme: dark;
   }
 }
 
-@media (max-width: 700px) { :root { --feng-radius-panel: 30px; } }
-@media (max-width: 600px) { :root { --feng-radius-row: 22px; } }
+@media (max-width: 700px) {
+  :root { --feng-radius-panel: 30px; }
+}
+
+@media (max-width: 600px) {
+  :root { --feng-radius-row: 22px; }
+}

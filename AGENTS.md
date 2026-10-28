@@ -4,7 +4,8 @@
 
 ## 目录
 
-- WordPress 模板入口保留在主题根目录；通用辅助功能集中在 `functions.php`，较大的功能模块保留在 `inc/`，显示片段在 `template-parts/`。
+- WordPress 模板入口保留在主题根目录；通用辅助功能集中在 `functions.php`，前台功能与共享服务保留在 `inc/`，后台设置与管理功能集中在 `admin/`，显示片段在 `template-parts/`。
+- 颜色、间距、圆角等设计变量集中在 `tools/polar-assets/source/assets/css/tokens.css`；组件使用语义变量，不在组件规则中重复定义固定色值。
 - 使用与开发说明放在 `docs/`；AI 角色与提示词组织见 `ai/README.md`。
 - 字体、模型等资源的来源和许可文件保留在对应资源目录。
 - 移动文档时同步修改相对链接，不将运行数据、凭据或用户对话写进文档。

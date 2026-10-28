@@ -40,10 +40,17 @@ function ButtonIcon({button,kind,index}:{button:HTMLElement;kind:string;index:nu
  return <MotionConfig reducedMotion="user">{Component?<Component key={state} ref={ref} size={20}/>:<SystemIcon key={state} ref={ref} size={20}/>}</MotionConfig>;
 }
 let mounted:Array<{button:HTMLElement;host:HTMLElement;root:Root}>=[];
-function cleanup(){mounted.forEach(({button,host,root})=>{root.unmount();host.remove();button.classList.remove('has-lucide-animation');});mounted=[];}
-function mount(){cleanup();const header=document.querySelector('.xf-header');if(!header)return;
- const specs=[['search','[data-xf-search-open]'],['dice','[data-feng-random]'],['theme','[data-xf-theme-toggle]'],['rss','[data-feng-copy-rss]'],['panel','[data-feng-dashboard-toggle]']];
- specs.forEach(([kind,selector],index)=>{const button=header.querySelector<HTMLElement>(selector);if(!button)return;const host=document.createElement('span');host.className='feng-lucide-animation';host.setAttribute('aria-hidden','true');button.append(host);button.classList.add('has-lucide-animation');const root=createRoot(host);root.render(<ButtonIcon button={button} kind={kind} index={index}/>);mounted.push({button,host,root});});
+function prune(){
+ mounted=mounted.filter(({button,host,root})=>{
+  if(button.isConnected&&host.isConnected)return true;
+  root.unmount();host.remove();button.classList.remove('has-lucide-animation');
+  return false;
+ });
 }
-document.addEventListener('xf:mounted',mount);document.addEventListener('xf:before-unmount',cleanup);window.addEventListener('pagehide',cleanup);window.addEventListener('pageshow',()=>{if(!mounted.length)mount();});
+function cleanup(){mounted.forEach(({button,host,root})=>{root.unmount();host.remove();button.classList.remove('has-lucide-animation');});mounted=[];}
+function mount(){prune();const header=document.querySelector('.xf-header');if(!header)return;
+ const specs=[['search','[data-xf-search-open]'],['dice','[data-feng-random]'],['theme','[data-xf-theme-toggle]'],['rss','[data-feng-copy-rss]'],['panel','[data-feng-dashboard-toggle]']];
+ specs.forEach(([kind,selector],index)=>{const button=header.querySelector<HTMLElement>(selector);if(!button||mounted.some(item=>item.button===button))return;const host=document.createElement('span');host.className='feng-lucide-animation';host.setAttribute('aria-hidden','true');button.append(host);button.classList.add('has-lucide-animation');const root=createRoot(host);root.render(<ButtonIcon button={button} kind={kind} index={index}/>);mounted.push({button,host,root});});
+}
+document.addEventListener('xf:mounted',mount);document.addEventListener('xf:before-unmount',prune);window.addEventListener('pagehide',cleanup);window.addEventListener('pageshow',()=>{if(!mounted.length)mount();});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();

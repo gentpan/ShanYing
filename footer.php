@@ -13,7 +13,7 @@ $feng_registrations=array(
 );
 if($feng_registrations[0]['number']||$feng_registrations[1]['number']):
 ?>
-<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute;overflow:hidden"><defs><filter id="feng-registration-transparent" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  -10 -10 -10 0 30"/><feComposite in2="SourceGraphic" operator="in"/></filter></defs></svg>
+<svg class="feng-svg-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><filter id="feng-registration-transparent" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  -10 -10 -10 0 30"/><feComposite in2="SourceGraphic" operator="in"/></filter></defs></svg>
 <div class="feng-footer-legal"><?php foreach($feng_registrations as $registration): if($registration['number']==='')continue; ?>
  <?php if($registration['url']): ?><a class="feng-registration" href="<?php echo esc_url($registration['url']); ?>" target="_blank" rel="noopener noreferrer"><?php else: ?><span class="feng-registration" tabindex="0"><?php endif; ?>
   <picture class="feng-registration__badge" data-registration-icon="<?php echo esc_attr($registration['icon']); ?>"><source srcset="<?php echo esc_url(get_theme_file_uri('/assets/images/'.$registration['icon'].'.avif')); ?>" type="image/avif"><img src="<?php echo esc_url(get_theme_file_uri('/assets/images/'.$registration['icon'].'.webp')); ?>" width="22" height="22" alt="" decoding="async" loading="lazy"></picture><span><?php echo esc_html($registration['number']); ?></span>
@@ -23,6 +23,13 @@ if($feng_registrations[0]['number']||$feng_registrations[1]['number']):
 </div>
 </footer>
 </div>
+<section id="feng-dashboard" class="feng-dashboard" hidden aria-labelledby="feng-dashboard-title" data-endpoint="<?php echo esc_url(admin_url('admin-ajax.php')); ?>">
+ <button class="feng-dashboard-close" type="button" data-feng-dashboard-close aria-label="关闭控制面板"><?php echo str_replace('fa-classic fa-regular','fa-solid',feng_icon('close')); ?></button>
+ <div class="feng-dashboard-sheet">
+ <div class="feng-dashboard-head"><div><p class="feng-dashboard-kicker">POLAR / EXPLORE</p><h1 id="feng-dashboard-title" tabindex="-1">站点控制面板</h1><p>文章、说说、分类与近况，都在这里。</p></div><div data-dashboard-summary-slot></div></div>
+ <div data-feng-dashboard-content aria-live="polite"></div>
+ </div>
+</section>
 <button class="xf-top" type="button" data-xf-top data-lordicon-content="top" aria-label="<?php esc_attr_e( '返回顶部', 'feng' ); ?>"><i class="fa-solid fa-square-up" aria-hidden="true"></i></button>
 <?php wp_footer(); ?>
 </body>

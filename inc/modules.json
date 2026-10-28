@@ -1,0 +1,34 @@
+{
+  "frontend": [
+    "xf-app",
+    "feng-navigation",
+    "feng-dashboard",
+    "feng-toast",
+    "feng-friend-avatar",
+    "feng-feed",
+    "feng-music",
+    "feng-activity",
+    "feng-talk",
+    "feng-comment-profile",
+    "feng-pet-motion",
+    "feng-pet",
+    "feng-reading",
+    "feng-related",
+    "feng-home-profile",
+    "feng-context",
+    "feng-travel",
+    "feng-jieqi",
+    "feng-image-fade",
+    "feng-greeting",
+    "feng-visitor-stats",
+    "feng-article-media"
+  ],
+  "admin": [
+    "feng-admin",
+    "feng-ai-admin",
+    "feng-category-badge",
+    "feng-feed-admin",
+    "feng-music-admin",
+    "feng-travel-editor"
+  ]
+}

@@ -70,8 +70,9 @@
 
 ```text
 shanying/
-├── assets/          已构建的样式、脚本与品牌资源
-├── inc/             PHP 功能模块
+├── assets/          已构建的前后台样式、脚本与品牌资源
+├── admin/           主题设置、管理面板与后台资源入口
+├── inc/             前台功能与共享服务模块
 ├── pages/           自定义页面模板
 ├── template-parts/  可复用页面片段
 ├── ai/              AI 目录说明
@@ -80,7 +81,7 @@ shanying/
 └── screenshot.png   WordPress 后台主题预览
 ```
 
-开发源文件当前位于上层工作区的 `tools/polar-assets/`，不要仅修改生成后的 main.css / main.js。构建与检查命令（在原工作区根目录运行）：
+开发源文件位于主题仓库的 `tools/polar-assets/`。设计变量集中在 `source/assets/css/tokens.css`，组件规则使用这些变量。不要仅修改生成后的 `main.css`、`admin.css`、`main.js`、`admin.js`。在主题根目录运行：
 
 ```sh
 python3 tools/polar-assets/build.py

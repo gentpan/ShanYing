@@ -203,12 +203,6 @@ function feng_pet_art($kind=null) {
  $kind=$kind?:feng_pet_identity()['kind'];if(!isset(feng_pet_catalog()[$kind]))$kind='bird';
  return file_get_contents(get_theme_file_path('/assets/images/pet-'.$kind.'.svg'));
 }
-add_action('wp_enqueue_scripts',function(){
- if(!feng_setting('pet_enabled',true))return;
- wp_enqueue_style('feng-pet',get_theme_file_uri('/assets/css/pet.css'),array('feng-pages'),feng_asset_version('/assets/css/pet.css'));
- wp_enqueue_script('feng-pet-motion',get_theme_file_uri('/assets/js/pet-motion.js'),array('xf-app'),feng_asset_version('/assets/js/pet-motion.js'),array('strategy'=>'defer','in_footer'=>true));
- wp_enqueue_script('feng-pet',get_theme_file_uri('/assets/js/pet.js'),array('xf-app','feng-pet-motion'),feng_asset_version('/assets/js/pet.js'),array('strategy'=>'defer','in_footer'=>true));
-});
 add_action('wp_footer',function(){
  if(!feng_setting('pet_enabled',true))return;$pet=feng_pet_identity();
  ?>
@@ -230,8 +224,3 @@ add_action('wp_footer',function(){
  </section></aside>
  <?php
 },5);
-function feng_pet_settings_preview() {
- $s=feng_pet_snapshot();echo '<div class="feng-pet-admin-gallery" aria-label="宠物外观预览">';
- foreach(feng_pet_catalog() as $kind=>$pet)echo '<figure>'.feng_pet_art($kind).'<figcaption>'.esc_html($pet['label'].' · '.$pet['name']).'</figcaption></figure>';
- echo '</div><p>小鸟保留已有成长档案。修改名字不会清零；关闭功能会保留已有数据。有效阅读 +1、摸摸 +1、投喂 +3、新审核评论 +8。</p><p>当前：<strong>'.esc_html($s['identity']['name'].' · '.$s['stage'].' · '.$s['xp'].' 成长值').'</strong>。已陪伴 '.(int)$s['age'].' 天。</p><p>AI 使用「AI 助手」中保存的文字模型。提问时发送宠物公开统计、最近七天日记和当前访客最近三轮对话；本站不保存对话。未配置或达到额度时，自动使用日常问答。每位访客每天最多 3 次 AI 请求；失败尝试也计入全站额度。昼夜按 WordPress「设置 → 常规」中的站点时区计算。</p>';
-}

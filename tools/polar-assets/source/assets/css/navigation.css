@@ -36,6 +36,7 @@
 .xf-header::before{transition:opacity .95s cubic-bezier(.22,1,.36,1);}
 @media(min-width:701px){:root[data-xf-scrolled] .xf-header{width:min(calc(var(--xf-frame) - 48px),calc(100% - 56px));padding-inline:20px;}}
 @media(prefers-reduced-motion:reduce){.xf-header,.xf-header::before{transition:none;}}
+html[data-xf-nav-swap] .xf-header,html[data-xf-nav-swap] .xf-header::before{transition:none!important;}
 /* Horizontal interpretation of Smit-Prajapati's Uiverse glider. */
 .xf-header .xf-nav{position:relative;isolation:isolate;}
 .feng-menu-glider{position:absolute;left:0;top:0;pointer-events:none;z-index:0;opacity:0;background:transparent;border-radius:0;transition:opacity .25s;}

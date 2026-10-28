@@ -85,8 +85,19 @@
   if(document.querySelector('[data-github-stats]:not([data-ready])'))idle(loadGithub);
   if(document.querySelector('[data-hero-activity]:not([data-ready])'))idle(loadHeroActivity);
  }
+ function mountHomeComments(){
+  const root=document.querySelector('[data-home-comments]');
+  if(!root||root.dataset.ready)return;
+  const track=root.querySelector('[data-home-comments-track]');
+  const group=track?.querySelector('.feng-home-comments__group');
+  root.dataset.ready='1';
+  if(!track||!group||root.classList.contains('is-static')||matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  const seconds=Math.max(28,Math.round(group.scrollWidth/34));
+  track.style.setProperty('--feng-comment-marquee',seconds+'s');
+ }
  showHeroIdle();
- document.addEventListener('xf:mounted',showHeroIdle);
+ mountHomeComments();
+ document.addEventListener('xf:mounted',()=>{showHeroIdle();mountHomeComments();});
  document.addEventListener('click',e=>{
   const hero=e.target.closest('.feng-profile-hero');if(!hero)return;
   const open=e.target.closest('[data-profile-open]'), day=e.target.closest('[data-profile-day]'), photo=e.target.closest('[data-profile-photo]'), close=e.target.closest('[data-profile-close]');

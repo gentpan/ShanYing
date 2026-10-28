@@ -174,7 +174,6 @@ function feng_comment_relative_time($comment){
 function feng_comment_remembered(){
  $c=wp_get_current_commenter();return !empty($c['comment_author'])&&!empty($c['comment_author_email']);
 }
-add_action('wp_enqueue_scripts',function(){wp_enqueue_script('feng-comment-profile',get_theme_file_uri('/assets/js/comment-profile.js'),array('xf-app'),feng_asset_version('/assets/js/comment-profile.js'),true);});
 
 // Store browser-provided macOS hints only with the newly submitted comment.
 add_action('comment_post',function($id){

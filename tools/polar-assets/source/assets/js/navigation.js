@@ -79,9 +79,12 @@
 (() => {
  let dispose=()=>{};
  function mountGlider(){
-  dispose();const nav=document.querySelector('.xf-header .xf-nav');if(!nav)return;
-  nav.querySelector('.feng-menu-glider')?.remove();
-  const glider=document.createElement('span');glider.className='feng-menu-glider';glider.setAttribute('aria-hidden','true');nav.append(glider);
+  const nav=document.querySelector('.xf-header .xf-nav');if(!nav)return;
+  dispose();
+  let glider=nav.querySelector('.feng-menu-glider');
+  if(!glider){
+   glider=document.createElement('span');glider.className='feng-menu-glider';glider.setAttribute('aria-hidden','true');nav.append(glider);
+  }
   const controller=new AbortController(),options={signal:controller.signal};let selected=null;
   const links=()=>[...nav.querySelectorAll('.xf-menu>li>a')];
   const current=()=>nav.querySelector('.xf-menu>.current-menu-item>a,.xf-menu>.current-menu-parent>a,.xf-menu>.current-menu-ancestor>a')||links().find(a=>new URL(a.href,location.href).pathname===location.pathname);
@@ -92,7 +95,7 @@
   nav.addEventListener('focusout',e=>{if(!nav.contains(e.relatedTarget))move(current());},options);
   const observer=new ResizeObserver(()=>move(selected?.isConnected?selected:current()));observer.observe(nav);links().forEach(a=>observer.observe(a));
   move(current());requestAnimationFrame(()=>glider.classList.add('is-ready'));
-  dispose=()=>{controller.abort();observer.disconnect();glider.remove();links().forEach(a=>a.classList.remove('is-glider-active'));};
+  dispose=()=>{controller.abort();observer.disconnect();links().forEach(a=>a.classList.remove('is-glider-active'));};
  }
  document.addEventListener('xf:mounted',mountGlider);mountGlider();
 })();

@@ -3,7 +3,7 @@ from pathlib import Path
 import json,subprocess,sys
 base=Path(__file__).resolve().parent
 root=base.parents[1]
-theme=root/'app/public/wp-content/themes/shanying'
+theme=root if (root/'style.css').exists() else root/'app/public/wp-content/themes/shanying'
 order=json.loads((base/'bundle-order.json').read_text())
 errors=[]
 for group in ('styles','scripts','admin_scripts'):

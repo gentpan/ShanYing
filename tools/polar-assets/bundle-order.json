@@ -49,7 +49,8 @@
     "feng-jieqi": "assets/js/jieqi.js",
     "feng-image-fade": "assets/js/image-fade.js",
     "feng-greeting": "assets/js/greeting.js",
-    "feng-visitor-stats": "assets/js/visitor-stats.js"
+    "feng-visitor-stats": "assets/js/visitor-stats.js",
+    "feng-article-media": "assets/js/article-media.js"
   },
   "admin_scripts": {
     "feng-admin": "admin.js",

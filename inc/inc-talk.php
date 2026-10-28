@@ -37,11 +37,6 @@ add_action('admin_init','feng_talk_page_setup');
 add_action('init','feng_talk_page_setup',30);
 add_action('after_switch_theme','feng_talk_page_setup');
 
-add_action('wp_enqueue_scripts',function(){
- // Shared script stays available when the page arrives through PJAX.
- wp_enqueue_style('feng-talk',get_theme_file_uri('/assets/css/talk.css'),array('feng-pages'),feng_asset_version('/assets/css/talk.css'));
- wp_enqueue_script('feng-talk',get_theme_file_uri('/assets/js/talk.js'),array('xf-app'),feng_asset_version('/assets/js/talk.js'),array('strategy'=>'defer','in_footer'=>true));
-});
 
 function feng_talk_color($tag) {
  $colors=array('#a06c46','#4c8197','#897097','#558780','#687d99','#ad6963','#748359');

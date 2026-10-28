@@ -92,3 +92,9 @@
 .feng-music-links{width:100%;min-width:0;}.feng-music-links textarea{width:100%;font:12px/1.9 ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere;}.feng-music-links>p{width:100%;}
 
 .feng-admin-about{font-size:12px;color:#646970;max-width:640px;line-height:1.8;}.feng-admin-about summary{cursor:pointer;}.feng-admin-about p{font-size:12px;margin:8px 0;}
+
+.feng-admin-inline-fields{display:flex;gap:6px;}
+.feng-admin-icon-preview{font-size:24px;}
+.feng-admin-icon-preview--large{min-height:40px;margin:8px 0;font-size:28px;}
+.feng-admin-badge-preview{margin:8px 0;}
+.feng-contain-image{object-fit:contain;}

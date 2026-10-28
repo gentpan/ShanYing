@@ -1,6 +1,9 @@
 /* FENG base components. WordPress-generated selectors only appear in compatibility rules. */
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-padding-top: 120px; scrollbar-gutter: stable; }
+html { scroll-padding-top: 120px; scrollbar-gutter: stable; background: var(--xf-bg); color-scheme: light; }
+html[data-xf-theme="dark"] { color-scheme: dark; }
+html[data-xf-theme="dark"] body { background: var(--xf-bg); }
+.feng-svg-defs { position: absolute; overflow: hidden; }
 /* Keep centered content stationary across short pages and modal scroll locks.
    The reserved space uses the page background; overlay scrollbars need no space. */
 @supports not (scrollbar-gutter: stable) {
@@ -136,23 +139,51 @@ blockquote p { margin: 0; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 10px 12px; border: 1px solid var(--xf-line); text-align: start; }
 .xf-article-footer { padding-block: 36px; color: var(--xf-muted); font-size: 13px; }
-.xf-search { display: flex; flex-wrap: wrap; gap: 10px; margin-block: 24px; }
+.xf-search { display: flex; flex-wrap: wrap; gap: 10px; margin-block: 24px; border-radius: var(--feng-field-radius, var(--feng-radius-sm)); }
 .xf-search input { flex: 1 1 180px; min-width: 0; }
-input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]), textarea, select { max-width: 100%; padding: 12px 16px; border: 1px solid var(--xf-line); border-radius: 12px; background: var(--xf-surface); color: var(--xf-text); }
-/* Form focus stays neutral; grouped searches use one outline around the whole control. */
+.feng-field,
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]),
+textarea,
+select {
+ max-width: 100%;
+ padding: var(--feng-space-3) var(--feng-space-4);
+ border: 1px solid var(--feng-field-border);
+ border-radius: var(--feng-field-radius, var(--feng-radius-sm));
+ background: var(--feng-field-bg);
+ color: var(--xf-text);
+}
 input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 1px solid color-mix(in srgb,var(--xf-text) 22%,transparent); outline-offset: 0; }
-.xf-search { border-radius: 12px; }
 body :is(.xf-search,.feng-talk-search,.feng-header-search__form) input[type="search"]:focus { outline: none; box-shadow: none; }
 body :is(.xf-search,.feng-talk-search,.feng-header-search__form):focus-within { outline: 1px solid color-mix(in srgb,var(--xf-text) 22%,transparent); outline-offset: -1px; }
 textarea { width: 100%; }
-.xf-search button, input[type="submit"] { background: var(--xf-text); color: var(--xf-bg); border: 0; padding: 12px 22px; border-radius: 12px; }
+.feng-button,
+.xf-search button,
+input[type="submit"] {
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+ gap: var(--feng-space-2);
+ padding: var(--feng-space-3) 22px;
+ border: 0;
+ border-radius: var(--feng-button-radius);
+ background: var(--feng-button-bg);
+ color: var(--feng-button-text);
+ text-decoration: none;
+}
+.feng-button--secondary { --feng-button-bg: var(--xf-soft); --feng-button-text: var(--xf-text); }
+.feng-button--accent { --feng-button-bg: var(--xf-accent); --feng-button-text: var(--xf-accent-text); }
+.feng-card {
+ border: 1px solid var(--feng-card-border);
+ border-radius: var(--feng-card-radius);
+ background: var(--feng-card-bg);
+}
 .nav-links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px 24px; margin-block: 40px; }
 .nav-links > div { flex: 1 1 240px; overflow-wrap: anywhere; }
 .nav-next { text-align: end; }
 .page-numbers, .post-page-numbers { display: inline-block; padding: 5px 14px; border-radius: 50%; text-decoration: none; }
 .page-numbers.current { background: var(--xf-text); color: var(--xf-bg); }
 .xf-page-links { clear: both; padding-block: 20px; }
-.xf-comments { padding: 30px; border: 1px solid var(--xf-line); border-radius: var(--xf-radius); background: var(--xf-glass); }
+.xf-comments { padding: 30px; border: 1px solid var(--feng-card-border); border-radius: var(--feng-card-radius); background: var(--feng-card-bg); }
 .xf-comment-list, .xf-comment-list .children { list-style: none; padding-inline-start: 0; }
 .xf-comment-list .children { padding-inline-start: 24px; }
 .comment-body { padding-block: 24px; border-bottom: 1px solid var(--xf-line); }
@@ -187,6 +218,12 @@ dialog::backdrop { background: rgb(15 17 26 / .4); }
 
 
 @keyframes xf-enter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+html[data-xf-nav-swap] .xf-header,
+html[data-xf-nav-swap] .xf-header::before { transition: none !important; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .32s; animation-timing-function: var(--feng-motion-gentle); }
+@media (prefers-reduced-motion: reduce) {
+ ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
 @media (max-width: 1050px) {
  .xf-container { width: calc(100% - 48px); }
  
