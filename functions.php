@@ -392,9 +392,9 @@ function feng_random_article_redirect(){
 add_action('admin_post_feng_random_article','feng_random_article_redirect');
 add_action('admin_post_nopriv_feng_random_article','feng_random_article_redirect');
 
-/** Public article hub: only published posts, five per page. */
+/** Public article hub: only published posts, ten per page. */
 function feng_hub_query($type='latest',$page=1,$category=0){
- $args=array('posts_per_page'=>5,'paged'=>max(1,min(10000,(int)$page)),'post_status'=>'publish','ignore_sticky_posts'=>true,'orderby'=>array('date'=>'DESC','ID'=>'DESC'));
+ $args=array('posts_per_page'=>10,'paged'=>max(1,min(10000,(int)$page)),'post_status'=>'publish','ignore_sticky_posts'=>true,'orderby'=>array('date'=>'DESC','ID'=>'DESC'));
  if($category)$args['cat']=$category;
  if($type==='comments')$args['orderby']=array('comment_count'=>'DESC','date'=>'DESC','ID'=>'DESC');
  if($type==='views'){
