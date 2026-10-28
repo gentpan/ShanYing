@@ -5,7 +5,7 @@ for($slot=1;$slot<=5;$slot++){$id=absint(feng_setting('home_category_'.$slot,0))
 foreach($available_groups as $category){if(count($xf_groups)>=5)break;if(!in_array($category->term_id,$selected_ids,true)){$xf_groups[]=$category;$selected_ids[]=$category->term_id;}}
 
 ?>
-<section id="xf-collections" class="xf-collections feng-article-hub" aria-label="文章分类与列表">
+<section id="xf-collections" class="xf-collections feng-article-hub squircle" aria-label="文章分类与列表">
  <div hidden><img data-hub-watermark alt="" hidden><p data-hub-description></p></div>
  <?php get_template_part('template-parts/home-comments'); ?>
  <nav class="feng-article-hub__tabs" aria-label="文章分类">

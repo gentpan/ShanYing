@@ -102,3 +102,15 @@
 @media (max-width: 600px) {
   :root { --feng-radius-row: 22px; }
 }
+
+.squircle {
+  --sq-r: 16px;
+  border-radius: calc(var(--sq-r) * .54);
+}
+
+@supports (corner-shape: squircle) {
+  .squircle {
+    border-radius: var(--sq-r);
+    corner-shape: squircle;
+  }
+}
