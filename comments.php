@@ -6,7 +6,7 @@ $identity='';
 if(is_user_logged_in()){$u=wp_get_current_user();$identity='<span class="feng-form-identity">'.get_avatar($u->ID,24).'<span>已登录为 '.esc_html($u->display_name).'</span><a class="feng-form-logout" href="'.esc_url(wp_logout_url(get_permalink())).'">退出登录</a></span>';}
 elseif($remembered){$identity='<span class="feng-form-identity">'.get_avatar($commenter['comment_author_email'],24).'<span>'.esc_html($commenter['comment_author']).'</span><button type="button" data-feng-switch-profile aria-expanded="false">切换资料</button></span>';}
 ?>
-<section id="comments" class="xf-comments feng-comments squircle" aria-label="评论区" data-xf-reveal>
+<section id="comments" class="xf-comments feng-comments" aria-label="评论区" data-xf-reveal>
  <div class="feng-group-title"><h2><?php echo feng_icon('comment'); ?><?php echo esc_html(number_format_i18n(get_comments_number())); ?> 条评论</h2></div>
  <?php if(have_comments()): ?><ol class="xf-comment-list feng-comment-list"><?php wp_list_comments(array('style'=>'ol','short_ping'=>true,'avatar_size'=>40,'callback'=>'feng_comment','per_page'=>0,'page'=>1)); ?></ol>
  <?php else: ?><p class="feng-empty">还没有留言，来写下第一句吧。</p><?php endif; ?>

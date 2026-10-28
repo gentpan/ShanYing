@@ -25,7 +25,7 @@ if ( ! $feng_header_logo ) {
 if ( ! $feng_header_logo ) $feng_header_logo = get_site_icon_url( 192 );
 if ( ! $feng_header_logo ) $feng_header_logo = get_theme_file_uri( '/assets/images/brand/polar-icon.png' );
 ?>
-<header class="xf-header xf-container squircle">
+<header class="xf-header xf-container">
  <a class="xf-brand" href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home">
   <span class="xf-brand__avatar" aria-hidden="true"><img src="<?php echo esc_url( $feng_header_logo ); ?>" width="32" height="32" alt="" loading="eager" decoding="async"></span>
   <span class="xf-brand__title"><?php bloginfo( 'name' ); ?><small><?php bloginfo( 'description' ); ?></small></span>
