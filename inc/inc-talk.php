@@ -3,7 +3,7 @@
 if (!defined('ABSPATH')) exit;
 
 add_action('init', function () {
- register_post_type('feng_talk', array(
+ register_post_type('talk', array(
   'labels'=>array('name'=>'说说','singular_name'=>'说说'),
   'public'=>false, 'publicly_queryable'=>false, 'show_ui'=>false,
   'show_in_rest'=>false, 'exclude_from_search'=>true, 'rewrite'=>false,
@@ -13,17 +13,18 @@ add_action('init', function () {
   'capabilities'=>array('create_posts'=>'do_not_allow'), 'map_meta_cap'=>true,
   'capability_type'=>'post',
  ));
- register_taxonomy('feng_talk_tag','feng_talk',array(
+ register_taxonomy('feng_talk_tag','talk',array(
   'label'=>'说说关键词','public'=>false,'show_ui'=>false,'show_in_rest'=>false,
   'hierarchical'=>false,'rewrite'=>false,
  ));
 });
 
+function feng_is_talk_post($post) { return $post && $post->post_type==='talk'; }
 function feng_talk_can_publish() { return is_user_logged_in() && current_user_can('read'); }
 function feng_talk_upload_limit() { return min(5*MB_IN_BYTES,wp_max_upload_size()); }
 function feng_talk_total_limit() { $limit=wp_convert_hr_to_bytes(ini_get('post_max_size'));return max(0,min(20*MB_IN_BYTES,($limit?:21*MB_IN_BYTES)-65536)); }
 function feng_talk_can_edit($post) {
- return $post && $post->post_type==='feng_talk' && feng_talk_can_publish()
+ return $post && $post->post_type==='talk' && feng_talk_can_publish()
   && ((int)$post->post_author===get_current_user_id() || current_user_can('manage_options'));
 }
 function feng_talk_page_setup() {
@@ -71,7 +72,7 @@ function feng_talk_card($post) {
 }
 function feng_talk_list($input=array()) {
  $page=max(1,min(10000,absint($input['page']??1)));$tag=absint($input['tag']??0);
- $args=array('post_type'=>'feng_talk','post_status'=>'publish','posts_per_page'=>18,'paged'=>$page,'orderby'=>array('date'=>'DESC','ID'=>'DESC'),'ignore_sticky_posts'=>true);
+ $args=array('post_type'=>'talk','post_status'=>'publish','posts_per_page'=>18,'paged'=>$page,'orderby'=>array('date'=>'DESC','ID'=>'DESC'),'ignore_sticky_posts'=>true);
  if($tag)$args['tax_query']=array(array('taxonomy'=>'feng_talk_tag','terms'=>array($tag)));
  $q=is_string($input['q']??null)?mb_substr(sanitize_text_field($input['q']),0,100):'';
  if($q!=='')$args['s']=$q;
@@ -87,7 +88,7 @@ function feng_talk_read_ajax() {
  if($op==='session')wp_send_json_success(array('can_manage'=>current_user_can('manage_options'),'can_publish'=>feng_talk_can_publish(),'nonce'=>feng_talk_can_publish()?wp_create_nonce('feng_talk_write'):'','tags'=>feng_talk_terms()));
  if($op==='detail') {
   $post=get_post(absint($_GET['id']??0));
-  if(!$post || $post->post_type!=='feng_talk' || $post->post_status!=='publish')wp_send_json_error(array('message'=>'这条说说已经不在这里了。'),404);
+  if(!feng_is_talk_post($post) || $post->post_status!=='publish')wp_send_json_error(array('message'=>'这条说说已经不在这里了。'),404);
   wp_send_json_success(feng_talk_data($post));
  }
  wp_send_json_success(feng_talk_list(wp_unslash($_GET)));
@@ -139,11 +140,11 @@ function feng_talk_write($input,$files=array()) {
  if(array_sum(array_column($files,'size'))>feng_talk_total_limit())return new WP_Error('talk_images','本次图片总大小超过了服务器限制，请减少图片后重试。',413);
  if($data['content']===''&&!$data['images']&&!$files)return new WP_Error('talk_empty','写点什么，或者添加一张图片吧。');
  if(!$post) {
-  $recent=get_posts(array('post_type'=>'feng_talk','post_status'=>array('publish','draft','trash'),'author'=>get_current_user_id(),'date_query'=>array(array('after'=>'1 day ago')),'fields'=>'ids','numberposts'=>50));
+  $recent=get_posts(array('post_type'=>'talk','post_status'=>array('publish','draft','trash'),'author'=>get_current_user_id(),'date_query'=>array(array('after'=>'1 day ago')),'fields'=>'ids','numberposts'=>50));
   if(count($recent)>=50)return new WP_Error('talk_limit','今天已经记录了很多片刻，明天再继续吧。',429);
  }
  $created=!$post;$new_images=array();
- if($created){$id=wp_insert_post(array('post_type'=>'feng_talk','post_status'=>'draft','post_author'=>get_current_user_id(),'post_title'=>'说说','comment_status'=>'closed','ping_status'=>'closed'),true);if(is_wp_error($id))return $id;}
+ if($created){$id=wp_insert_post(array('post_type'=>'talk','post_status'=>'draft','post_author'=>get_current_user_id(),'post_title'=>'说说','comment_status'=>'closed','ping_status'=>'closed'),true);if(is_wp_error($id))return $id;}
  foreach($files as $file) {
   $image=feng_talk_upload($file,$id);
   if(is_wp_error($image)){foreach($new_images as $remove)wp_delete_attachment($remove,true);if($created)wp_delete_post($id,true);return $image;}

@@ -5,7 +5,7 @@ if(!$portrait)$portrait=get_avatar_url(get_option('admin_email'),array('size'=>3
 $photos=array();for($i=1;$i<=4;$i++){ $url=feng_setting('hero_photo_'.$i,'');if($url)$photos[]=$url; }
 $name=feng_setting('profile_name','')?:get_bloginfo('name');
 $now=new DateTimeImmutable('today',wp_timezone());$start=$now->modify('-89 days');
-$notes=get_posts(array('post_type'=>'feng_talk','post_status'=>'publish','has_password'=>false,'posts_per_page'=>1,'no_found_rows'=>true));
+$notes=get_posts(array('post_type'=>'talk','post_status'=>'publish','has_password'=>false,'posts_per_page'=>1,'no_found_rows'=>true));
 ?>
 <noscript><style>.feng-photo-stack[data-stack-loading] .feng-stack-front{opacity:1}</style></noscript>
 <?php

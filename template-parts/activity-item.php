@@ -2,7 +2,7 @@
 /** A small, consistent reading row for an article or a short note. */
 if(!defined('ABSPATH'))exit;
 $entry=get_post($args['post']??null);if(!$entry)return;
-$talk=$entry->post_type==='feng_talk';$locked=post_password_required($entry);
+$talk=feng_is_talk_post($entry);$locked=post_password_required($entry);
 $url=$talk?feng_page_url('talks').'#talk-'.$entry->ID:get_permalink($entry);
 $image='';$tags=array();
 if($talk) {

@@ -5,11 +5,9 @@
     "xf-base": "assets/css/base.css",
     "xf-layout": "assets/css/layout.css",
     "feng-pages": "assets/css/pages.css",
-    "feng-brand-font": "https://static.bluecdn.com/fonts/alimama-fangyuanti.css",
     "feng-typography": "assets/css/typography.css",
     "feng-article": "assets/css/article.css",
     "feng-code-font": "assets/css/code-font.css",
-    "feng-hero-font": "https://static.bluecdn.com/fonts/zzqxmxht.css",
     "feng-cards": "assets/css/cards.css",
     "feng-dashboard": "assets/css/dashboard.css",
     "feng-navigation": "assets/css/navigation.css",
@@ -25,7 +23,6 @@
     "feng-travel": "assets/css/travel.css",
     "feng-jieqi": "assets/css/jieqi.css",
     "feng-site-extras": "assets/css/site-extras.css",
-    "feng-title-font": "https://static.bluecdn.com/fonts/kuaikanshijieti.css",
     "feng-archives": "assets/css/archives.css"
   },
   "scripts": {

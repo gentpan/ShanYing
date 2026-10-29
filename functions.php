@@ -467,7 +467,7 @@ add_action('wp_footer',function(){
 /** activity */
 if(!defined('ABSPATH'))exit;
 function feng_activity_query($page=1){
- return new WP_Query(array('post_type'=>array('post','feng_talk'),'post_status'=>'publish','has_password'=>false,'posts_per_page'=>max(1,min(30,(int)feng_setting('home_posts_per_page',3))),'paged'=>max(1,(int)$page),'orderby'=>array('date'=>'DESC','ID'=>'DESC'),'ignore_sticky_posts'=>true,'date_query'=>array(array('column'=>'post_date_gmt','after'=>gmdate('Y-m-d H:i:s',time()-7*DAY_IN_SECONDS),'inclusive'=>true))));
+ return new WP_Query(array('post_type'=>array('post','talk'),'post_status'=>'publish','has_password'=>false,'posts_per_page'=>max(1,min(30,(int)feng_setting('home_posts_per_page',3))),'paged'=>max(1,(int)$page),'orderby'=>array('date'=>'DESC','ID'=>'DESC'),'ignore_sticky_posts'=>true,'date_query'=>array(array('column'=>'post_date_gmt','after'=>gmdate('Y-m-d H:i:s',time()-7*DAY_IN_SECONDS),'inclusive'=>true))));
 }
 function feng_activity_rows($query){
  ob_start();foreach($query->posts as $entry)get_template_part('template-parts/activity-item',null,array('post'=>$entry));return ob_get_clean();
@@ -485,7 +485,7 @@ add_action('wp_ajax_nopriv_feng_activity','feng_activity_ajax');
 function feng_weekly_blog_stats($after=null){
  $after=$after?:gmdate('Y-m-d H:i:s',time()-7*DAY_IN_SECONDS);
  $stats=array('posts'=>0,'talks'=>0,'comments'=>0,'people'=>0,'replies'=>0);
- foreach(array('post'=>'posts','feng_talk'=>'talks') as $type=>$key){
+ foreach(array('post'=>'posts','talk'=>'talks') as $type=>$key){
   $query=new WP_Query(array('post_type'=>$type,'post_status'=>'publish','has_password'=>false,'posts_per_page'=>1,'fields'=>'ids','date_query'=>array(array('column'=>'post_date_gmt','after'=>$after,'inclusive'=>true))));
   $stats[$key]=(int)$query->found_posts;
  }
@@ -551,7 +551,7 @@ add_action('wp_ajax_nopriv_feng_github_stats','feng_github_stats_ajax');
 
 function feng_heatmap_counts($start,$end){
  global $wpdb;
- $rows=$wpdb->get_results($wpdb->prepare("SELECT DATE(post_date) AS day, COUNT(*) AS total FROM {$wpdb->posts} WHERE post_type IN ('post','feng_talk') AND post_status='publish' AND post_password='' AND post_date >= %s AND post_date <= %s GROUP BY DATE(post_date)",$start->format('Y-m-d').' 00:00:00',$end->format('Y-m-d').' 23:59:59'),OBJECT_K);
+ $rows=$wpdb->get_results($wpdb->prepare("SELECT DATE(post_date) AS day, COUNT(*) AS total FROM {$wpdb->posts} WHERE post_type IN ('post','talk') AND post_status='publish' AND post_password='' AND post_date >= %s AND post_date <= %s GROUP BY DATE(post_date)",$start->format('Y-m-d').' 00:00:00',$end->format('Y-m-d').' 23:59:59'),OBJECT_K);
  $counts=array();
  if($rows)foreach($rows as $day=>$row)$counts[$day]=(int)$row->total;
  return $counts;
@@ -565,10 +565,10 @@ function feng_heatmap_day_markup($date){
  $cache_key='feng_heatmap_day_v1_'.$date;
  $cached=get_transient($cache_key);
  if($cached!==false)return is_string($cached)?$cached:'';
- $items=get_posts(array('post_type'=>array('post','feng_talk'),'post_status'=>'publish','has_password'=>false,'posts_per_page'=>30,'no_found_rows'=>true,'orderby'=>array('date'=>'DESC','ID'=>'DESC'),'date_query'=>array(array('after'=>$date.' 00:00:00','before'=>$date.' 23:59:59','inclusive'=>true,'column'=>'post_date'))));
+ $items=get_posts(array('post_type'=>array('post','talk'),'post_status'=>'publish','has_password'=>false,'posts_per_page'=>30,'no_found_rows'=>true,'orderby'=>array('date'=>'DESC','ID'=>'DESC'),'date_query'=>array(array('after'=>$date.' 00:00:00','before'=>$date.' 23:59:59','inclusive'=>true,'column'=>'post_date'))));
  if(!$items){$html='';set_transient($cache_key,$html,6*HOUR_IN_SECONDS);return $html;}
  ob_start();echo '<ul>';
- foreach($items as $item)echo '<li><a href="'.esc_url($item->post_type==='feng_talk'?feng_page_url('talks').'#talk-'.$item->ID:get_permalink($item)).'"><small>'.($item->post_type==='feng_talk'?'说说 · ':'文章 · ').'</small>'.esc_html($item->post_type==='feng_talk'?wp_trim_words(wp_strip_all_tags($item->post_content),25,'…'):get_the_title($item)).'</a></li>';
+ foreach($items as $item)echo '<li><a href="'.esc_url(feng_is_talk_post($item)?feng_page_url('talks').'#talk-'.$item->ID:get_permalink($item)).'"><small>'.(feng_is_talk_post($item)?'说说 · ':'文章 · ').'</small>'.esc_html(feng_is_talk_post($item)?wp_trim_words(wp_strip_all_tags($item->post_content),25,'…'):get_the_title($item)).'</a></li>';
  echo '</ul>';$html=ob_get_clean();
  set_transient($cache_key,$html,6*HOUR_IN_SECONDS);
  return $html;
@@ -620,7 +620,7 @@ function feng_weekly_badges_markup(){
  global $wpdb;
  $totals=array(
   'posts'=>(int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type='post' AND post_status='publish' AND post_password=''"),
-  'talks'=>(int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type='feng_talk' AND post_status='publish'"),
+  'talks'=>(int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type='talk' AND post_status='publish'"),
   'comments'=>(int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_approved='1'"),
  );
  ob_start();
@@ -628,7 +628,7 @@ function feng_weekly_badges_markup(){
  return trim(ob_get_clean());
 }
 function feng_hero_activity_payload(){
- $key='feng_hero_activity_v1';
+ $key='feng_hero_activity_v2';
  $today=wp_date('Y-m-d');
  $cached=get_transient($key);
  if(is_array($cached)&&($cached['day']??'')===$today)return $cached;
@@ -643,21 +643,21 @@ function feng_hero_activity_ajax(){
 add_action('wp_ajax_feng_hero_activity','feng_hero_activity_ajax');
 add_action('wp_ajax_nopriv_feng_hero_activity','feng_hero_activity_ajax');
 function feng_flush_hero_activity($post_id=0){
- delete_transient('feng_hero_activity_v1');
+ delete_transient('feng_hero_activity_v2');
  delete_transient('feng_home_comments_v1');
  $post=$post_id?get_post($post_id):null;
- if($post&&in_array($post->post_type,array('post','feng_talk'),true))delete_transient('feng_heatmap_day_v1_'.substr($post->post_date,0,10));
+ if($post&&in_array($post->post_type,array('post','talk'),true))delete_transient('feng_heatmap_day_v1_'.substr($post->post_date,0,10));
 }
 add_action('save_post',static function($id){if(wp_is_post_revision($id)||wp_is_post_autosave($id))return;feng_flush_hero_activity($id);},20);
 add_action('before_delete_post','feng_flush_hero_activity');
 add_action('trashed_post','feng_flush_hero_activity');
-add_action('comment_post',static function(){delete_transient('feng_hero_activity_v1');delete_transient('feng_home_comments_v1');});
-add_action('deleted_comment',static function(){delete_transient('feng_hero_activity_v1');delete_transient('feng_home_comments_v1');});
-add_action('transition_comment_status',static function(){delete_transient('feng_hero_activity_v1');delete_transient('feng_home_comments_v1');});
+add_action('comment_post',static function(){delete_transient('feng_hero_activity_v2');delete_transient('feng_home_comments_v1');});
+add_action('deleted_comment',static function(){delete_transient('feng_hero_activity_v2');delete_transient('feng_home_comments_v1');});
+add_action('transition_comment_status',static function(){delete_transient('feng_hero_activity_v2');delete_transient('feng_home_comments_v1');});
 
 function feng_home_comment_subject($post){
  if(!$post)return '';
- if($post->post_type==='feng_talk'){
+ if(feng_is_talk_post($post)){
   $text=wp_trim_words(wp_strip_all_tags($post->post_content),14,'…');
   return $text!==''?$text:'一条说说';
  }
@@ -746,8 +746,8 @@ function feng_dashboard_data() {
  $stats = $wpdb->get_row("SELECT COUNT(*) AS posts, MIN(post_date) AS first_date FROM {$wpdb->posts} WHERE post_status='publish' AND post_type='post' AND post_password=''");
  $comment_total = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->comments} c INNER JOIN {$wpdb->posts} p ON p.ID=c.comment_post_ID WHERE c.comment_approved='1' AND c.comment_type IN ('comment','') AND p.post_status='publish' AND p.post_password='' AND p.post_type IN ('post','page')");
  $days = $stats->first_date ? max(1,(int)(current_datetime()->diff(new DateTimeImmutable($stats->first_date,wp_timezone()))->days)+1) : 0;
- $talks=get_posts(array('post_type'=>'feng_talk','post_status'=>'publish','has_password'=>false,'numberposts'=>3));
- $talk_total=(int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_status='publish' AND post_type='feng_talk' AND post_password=''");
+ $talks=get_posts(array('post_type'=>'talk','post_status'=>'publish','has_password'=>false,'numberposts'=>3));
+ $talk_total=(int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_status='publish' AND post_type='talk' AND post_password=''");
  $recommended=get_posts(array_merge($base,array('orderby'=>array('comment_count'=>'DESC','date'=>'DESC'))));
  $categories=get_terms(array('taxonomy'=>'category','hide_empty'=>false,'orderby'=>'name','order'=>'ASC'));
  if(is_wp_error($categories))$categories=array();
@@ -1048,7 +1048,8 @@ function feng_activity_calendar($type='post',$year=0,$options=array()){
  $today=new DateTimeImmutable('today',wp_timezone());
  $start=$year?new DateTimeImmutable($year.'-01-01',wp_timezone()):$today->modify('-'.(max(1,min(366,(int)($options['days']??365)))-1).' days');
  $end=$year?$start->modify('+1 year -1 day'):$today;
- $rows=$wpdb->get_results($wpdb->prepare("SELECT DATE($column) day,COUNT(*) total FROM {$wpdb->posts} WHERE post_type=%s AND post_status='publish' AND post_password='' AND $column >= %s AND $column < %s GROUP BY DATE($column)",$talk?'feng_talk':'post',$start->format('Y-m-d'),$end->modify('+1 day')->format('Y-m-d')));
+ $type_sql=$talk?"post_type='talk'":"post_type='post'";
+ $rows=$wpdb->get_results($wpdb->prepare("SELECT DATE($column) day,COUNT(*) total FROM {$wpdb->posts} WHERE $type_sql AND post_status='publish' AND post_password='' AND $column >= %s AND $column < %s GROUP BY DATE($column)",$start->format('Y-m-d'),$end->modify('+1 day')->format('Y-m-d')));
  $counts=array();$total=0;foreach($rows as $row){$counts[$row->day]=(int)$row->total;$total+=(int)$row->total;}
  $grid_rows=max(1,min(7,(int)($options['rows']??7)));
  $grid_start=$grid_rows===7?$start->modify('-'.((int)$start->format('N')-1).' days'):$start;

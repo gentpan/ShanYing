@@ -1,14 +1,14 @@
 /* Brand and navigation can be switched independently without changing body typography. */
 :root {
- --feng-brand-font: "Alimama FangYuanTi VF", var(--xf-font);
+ --feng-brand-font: var(--xf-font);
  --feng-menu-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
- --feng-hero-font: "FontQu Smile 常规", var(--xf-font);
+ --feng-hero-font: "Noto Serif SC", serif;
  --feng-reading-font: Arial, "Misans VF", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 .xf-brand__title, .xf-footer__name { font-family: var(--feng-brand-font); font-weight: 400; }
 
 .xf-header .xf-menu a { font-family: var(--feng-menu-font); font-weight: 400; }
-.single-post .xf-reading-cover__copy h1, .single-post .feng-entry-hero__copy h1 { font-family: "快看世界体", var(--xf-font); font-weight: 400; }
+.single-post .xf-reading-cover__copy h1, .single-post .feng-entry-hero__copy h1 { font-family: "Noto Serif SC", serif; font-weight: 400; }
 .xf-stage__identity h1 { font-family: var(--feng-hero-font); font-weight: 400; }
 .single-post .xf-article, .single-post .xf-main > .xf-reading { font-family: var(--feng-reading-font); -webkit-font-smoothing: antialiased; }
 .single-post .xf-prose { font-size: 16px; font-weight: 400; line-height: 2; letter-spacing: normal; }
